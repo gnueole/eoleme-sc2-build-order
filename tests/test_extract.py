@@ -23,6 +23,7 @@ from sc2bo.extract import (
     economy_rows,
     fmt_time,
     parse_time,
+    icon_for,
     labels,
     pretty,
     render_markdown,
@@ -304,3 +305,51 @@ class TestRenderMarkdownFromReport:
         r["lang"] = "en"
         md = render_markdown(r, Options(lang="en"))
         assert "**Map:**" in md and "### Economy" in md
+
+
+class TestIcons:
+    """
+    The game names its icons in a shape that only half matches what spawningtool
+    reports. These are the rules that close the gap; each one earned its place by
+    a name that failed without it.
+    """
+
+    def test_units_and_buildings_map_directly(self):
+        assert icon_for("Marine") == "btn-unit-terran-marine"
+        assert icon_for("SupplyDepot") == "btn-building-terran-supplydepot"
+        assert icon_for("Pylon") == "btn-building-protoss-pylon"
+
+    def test_the_race_prefix_is_stripped(self):
+        # The game files "Terran Infantry Weapons Level 1" without its race.
+        assert icon_for("Terran Infantry Weapons Level 1") == "btn-upgrade-terran-infantryweaponslevel1"
+
+    def test_a_trailing_plural_is_tried_singular(self):
+        # "Combat Shields" is filed as combatshield.
+        assert icon_for("Combat Shields") == "btn-techupgrade-terran-combatshield"
+
+    def test_zerg_says_attacks_where_spawningtool_says_weapons(self):
+        assert icon_for("Zerg Melee Weapons Level 1") == "btn-upgrade-zerg-meleeattacks-level1"
+        assert icon_for("Zerg Missile Weapons Level 2") == "btn-upgrade-zerg-missileattacks-level2"
+
+    def test_addons_fall_back_to_the_generic_building(self):
+        # There is no barracks-specific tech lab icon; the game ships one.
+        assert icon_for("BarracksTechLab") == "btn-building-terran-techlab"
+        assert icon_for("FactoryReactor") == "btn-building-terran-reactor"
+
+    def test_an_unknown_name_returns_nothing_rather_than_guessing(self):
+        assert icon_for("Totally Made Up Thing") is None
+        assert icon_for(None) is None
+        assert icon_for("") is None
+
+    def test_every_indexed_icon_is_actually_shipped(self):
+        # An index entry with no file behind it is a broken image on the page.
+        from sc2bo.icons import index
+        root = Path(__file__).resolve().parents[1] / "public" / "icons"
+        missing = [v for v in index().values() if not (root / f"{v}.webp").exists()]
+        assert not missing, f"{len(missing)} indexed icons have no file, e.g. {missing[:3]}"
+
+    def test_the_aliases_point_at_files_that_exist(self):
+        from sc2bo.icons import ALIASES
+        root = Path(__file__).resolve().parents[1] / "public" / "icons"
+        broken = [v for v in ALIASES.values() if not (root / f"{v}.webp").exists()]
+        assert not broken, f"aliases with no file: {broken}"

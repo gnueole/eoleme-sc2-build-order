@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import mimetypes
 import os
 import sys
 import tempfile
@@ -258,5 +259,9 @@ async def extract(
 
 
 # Mounted last: the static catch-all must not shadow the /api routes.
+# Python's mimetypes table does not know .webp on every base image, and
+# StaticFiles trusts it: without this the icons go out as octet-stream.
+mimetypes.add_type("image/webp", ".webp")
+
 _PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
 app.mount("/", StaticFiles(directory=_PUBLIC_DIR, html=True), name="public")

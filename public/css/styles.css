@@ -389,6 +389,12 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 .view tr.wk td { color: var(--text-faint); }
 .chrono { color: var(--secondary-color); }
 
+/* Unit icons. Sized down from the game's 76px buttons; the slot keeps its width
+   when we have no icon, so the action column never jitters. */
+.view td.act { display: flex; align-items: center; gap: 9px; }
+.view .ico { width: 24px; height: 24px; flex: none; border-radius: 4px; image-rendering: auto; }
+.view .ico-none { border: 1px dashed var(--border-color); border-radius: 4px; opacity: .5; }
+
 .line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
 .line .lbl {
   font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
@@ -433,6 +439,7 @@ footer {
 }
 footer a { color: var(--accent-color); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
+.attribution { margin: 12px 0 0; font-size: 11.5px; opacity: .75; max-width: 78ch; }
 
 /* CSS_TOPOLOGY.md §7: the pair is 767.98px / 768px, never 768px on both sides. */
 @media (max-width: 767.98px) {

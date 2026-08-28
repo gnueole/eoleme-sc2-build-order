@@ -54,7 +54,7 @@ redirection under WSL. `SC2_REPLAY_DIR` or `--replay-dir` override it.
 
 ```bash
 make venv     # Python environment
-make test     # 58 tests
+make test     # 66 tests
 make up       # container on http://localhost:3050
 make logs
 make down
@@ -88,6 +88,7 @@ server.py             FastAPI service
 public/index.html     Web interface, no build step, no JS dependency
 public/css/styles.css eole.me brand guidelines
 public/js/            translations.js (FR/EN) and app.js (theme, language, upload)
+public/icons/         1,269 unit icons, WebP, extracted from the game
 docker/               Dockerfile plus local and production compose
 ```
 

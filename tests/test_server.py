@@ -127,3 +127,15 @@ class TestStaticAssets:
         response = client.get("/js/translations.js")
         assert response.status_code == 200
         assert "TRANSLATIONS" in response.text
+
+
+class TestIconAssets:
+    def test_icons_are_served_as_webp_not_octet_stream(self, client):
+        # StaticFiles trusts Python's mimetypes table, which does not know .webp
+        # on every base image. An octet-stream image caches badly.
+        response = client.get("/icons/btn-unit-terran-marine.webp")
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "image/webp"
+
+    def test_a_missing_icon_is_a_404_not_a_crash(self, client):
+        assert client.get("/icons/btn-nope.webp").status_code == 404

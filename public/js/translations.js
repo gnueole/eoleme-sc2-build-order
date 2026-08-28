@@ -49,6 +49,7 @@ export const TRANSLATIONS = {
 
     footer: "Le replay est lu en mémoire puis effacé : rien n'est stocké, rien n'est partagé. Les chiffres d'économie viennent des relevés que le jeu écrit lui-même dans le fichier.",
     footer_source: "Code source",
+    attribution: "StarCraft II et les icônes d'unités sont © Blizzard Entertainment, Inc. Utilisées selon les règles de Blizzard pour les contenus de fans. Ce site n'est pas affilié à Blizzard.",
 
     theme_light: "Thème clair",
     theme_dark: "Thème sombre",
@@ -102,6 +103,7 @@ export const TRANSLATIONS = {
 
     footer: "The replay is read in memory then erased: nothing is stored, nothing is shared. The economy figures come from the samples the game itself writes into the file.",
     footer_source: "Source code",
+    attribution: "StarCraft II and the unit icons are © Blizzard Entertainment, Inc. Used under Blizzard's fan content guidelines. This site is not affiliated with Blizzard.",
 
     theme_light: "Light theme",
     theme_dark: "Dark theme",

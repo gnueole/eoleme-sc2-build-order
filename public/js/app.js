@@ -180,8 +180,14 @@ function renderReport(report, L) {
       esc(L.col_supply) + '</th><th class="num">' + esc(L.col_time) + "</th><th>" +
       esc(L.col_action) + "</th></tr></thead><tbody>");
     for (const e of s.build) {
+      /* The icon is decorative: the name is right beside it, so it stays out of
+         the accessibility tree and never blocks the row from rendering. */
+      const icon = e.icon
+        ? '<img class="ico" src="icons/' + encodeURIComponent(e.icon) + '.webp" alt="" loading="lazy" width="24" height="24">'
+        : '<span class="ico ico-none" aria-hidden="true"></span>';
       h.push("<tr" + (e.worker ? ' class="wk"' : "") + '><td class="num sup">' + esc(e.supply) +
-        '</td><td class="num t">' + esc(e.time) + "</td><td>" + esc(e.action) +
+        '</td><td class="num t">' + esc(e.time) + '</td><td class="act">' + icon + "<span>" +
+        esc(e.action) + "</span>" +
         (e.chrono ? ' <span class="chrono" title="' + esc(L.chrono) + '">⚡</span>' : "") +
         "</td></tr>");
     }

@@ -14,6 +14,8 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
+from .icons import icon_for
+
 # --------------------------------------------------------------------------
 # Options de rendu
 # --------------------------------------------------------------------------
@@ -367,6 +369,8 @@ def build_report(data: dict, stats: dict[int, list[dict]], options: Options) -> 
                     "action": pretty(e["name"], lang),
                     "chrono": bool(e["is_chronoboosted"]),
                     "worker": bool(e["is_worker"]),
+                    # The game's own button icon, when we ship one for this name.
+                    "icon": icon_for(e["name"]),
                 }
                 for e in rows
             ],

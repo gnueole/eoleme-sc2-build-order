@@ -4,6 +4,30 @@ Every notable change to SC2 Build Order Forge.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
+## [1.4.0] — 2026-08-28
+
+### Added
+- **The game's own unit icons** next to every build-order step. 1,269 icons
+  extracted from the installed game's CASC storage, converted from 76px DX10
+  `.dds` to 64px WebP — 3.3 MB in total, and a page only fetches the twenty or so
+  it needs.
+- `sc2bo/icons.py` maps a step name to its icon. Plain normalisation only reaches
+  units and buildings, so three rules close the gap on upgrades: the race prefix
+  is stripped ("Terran Infantry Weapons Level 1" is filed without it), a trailing
+  plural is retried singular ("Combat Shields" is filed as combatshield), and
+  "weapons" is retried as "attacks" (Zerg upgrades use the second word). Add-ons
+  fall back to the generic tech lab and reactor icons. Measured on a real game:
+  49 steps out of 49 carry an icon.
+- Two tests assert that every indexed icon and every alias has a file behind it —
+  an index entry with nothing on disk is a broken image on the page.
+- Blizzard attribution in the footer, in both languages, as the assets require.
+
+### Notes
+- The community pack `MatthewMarinets/ap_sc2_icons` was measured first and turned
+  down: built for the Archipelago co-op randomizer, it covers 61 % of the melee
+  vocabulary and misses SCV, Drone, Overlord, Pylon, Gateway, Nexus, Supply Depot,
+  Barracks and Hatchery — the backbone of every build order.
+
 ## [1.3.0] — 2026-08-28
 
 ### Added
