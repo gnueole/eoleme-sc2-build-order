@@ -1,14 +1,14 @@
 /* ==========================================================================
    sc2.eole.me — Build Order Forge
-   Charte graphique eole.me : voir www/DESIGN_SYSTEM.md et www/CSS_TOPOLOGY.md.
-   Sous-page autonome, donc feuille de style locale qui reprend les *noms* de
-   tokens de la charte, comme le fait trail-mapper (gpx.eole.me).
-   Persona : mode business (Julien) — l'outil est analytique, et le bleu néon
-   de la charte est aussi celui des interfaces Terran.
+   eole.me brand guidelines: see www/DESIGN_SYSTEM.md and www/CSS_TOPOLOGY.md.
+   A standalone sub-page, so a local stylesheet reusing the guidelines' token
+   *names*, the way trail-mapper (gpx.eole.me) does.
+   Persona: business mode (Julien) — the tool is analytical, and the guidelines'
+   neon blue is also the colour of Terran interfaces.
    ========================================================================== */
 
 :root {
-  /* Mode business — thème sombre (DESIGN_SYSTEM.md §4) */
+  /* Business mode — dark theme (DESIGN_SYSTEM.md §4) */
   --bg-color:        #080b11;
   --bg-elevated:     #0d1420;
   --card-bg:         rgba(15, 23, 42, 0.40);
@@ -22,7 +22,7 @@
   --accent-glow:     rgba(56, 189, 248, 0.25);
   --accent-ink:      #061018;
 
-  /* Chiffres de jeu : ravitaillement, timings, revenus */
+  /* Game figures: supply, timings, income */
   --secondary-color: #f59e0b;
   --secondary-hover: #fbbf24;
 
@@ -31,8 +31,8 @@
   --error-color:     #ef4444;
   --error-bg:        rgba(239, 68, 68, 0.12);
 
-  /* Typographie de la charte (DESIGN_SYSTEM.md §3). Fira Code est la mono des
-     sous-pages autonomes, d'où Google Fonts ici plutôt que l'auto-hébergement. */
+  /* Guidelines typography (DESIGN_SYSTEM.md §3). Fira Code is the mono of the
+     standalone sub-pages, hence Google Fonts here rather than self-hosting. */
   --font-title: 'Outfit', 'Inter', system-ui, sans-serif;
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-mono:  'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -42,11 +42,11 @@
   --container: 1000px;
 }
 
-/* Mode business — thème clair (DESIGN_SYSTEM.md §4).
-   Trois états, comme trail-mapper : clair, sombre, système. Le script stampe
-   `theme-light` ou `theme-dark` sur <html> et sur <body> avant le premier rendu ;
-   la media query ne sert que de repli quand JavaScript est absent. Le `:not`
-   garantit qu'un choix explicite de sombre l'emporte sur un système en clair. */
+/* Business mode — light theme (DESIGN_SYSTEM.md §4).
+   Three states, like trail-mapper: light, dark, system. The script stamps
+   `theme-light` or `theme-dark` on <html> and <body> before first paint; the
+   media query is only a fallback for when JavaScript is absent. The `:not`
+   guarantees an explicit dark choice beats a light system. */
 @media (prefers-color-scheme: light) {
   :root:not(.theme-dark) {
     --bg-color:        #f8fafc;
@@ -98,7 +98,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  min-height: 100dvh;              /* CSS_TOPOLOGY.md §6 : dvh en progressive upgrade */
+  min-height: 100dvh;              /* CSS_TOPOLOGY.md §6: dvh as a progressive upgrade */
   background: var(--bg-color);
   color: var(--text-color);
   font-family: var(--font-sans);
@@ -108,7 +108,7 @@ body {
   transition: background-color var(--theme-transition), color var(--theme-transition);
 }
 
-/* Halo ambiant, comme les « ambient glows » de layouts.css. Décoratif et inerte. */
+/* Ambient halo, like the "ambient glows" in layouts.css. Decorative and inert. */
 body::before {
   content: "";
   position: fixed;
@@ -130,7 +130,7 @@ h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; te
   color: var(--text-faint);
 }
 
-/* ---------- en-tête ---------- */
+/* ---------- masthead ---------- */
 
 .masthead { position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
 .masthead-in {
@@ -145,7 +145,7 @@ h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; te
 .wordmark {
   font-family: var(--font-title);
   font-size: 30px;
-  font-weight: 800;               /* Outfit 800 : le poids de titre de la charte */
+  font-weight: 800;               /* Outfit 800: the guidelines' heading weight */
   letter-spacing: -0.02em;
   display: flex;
   align-items: center;
@@ -158,7 +158,7 @@ h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; te
 }
 .tagline { color: var(--text-muted); font-size: 14px; margin: 4px 0 0; max-width: 56ch; }
 
-/* ---------- contrôles thème et langue ---------- */
+/* ---------- theme and language controls ---------- */
 
 .controls { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 
@@ -189,7 +189,7 @@ h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; te
 .seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-glow); }
 .seg .glyph { font-size: 14px; }
 
-/* ---------- structure ---------- */
+/* ---------- layout ---------- */
 
 main {
   position: relative;
@@ -223,7 +223,7 @@ main {
 }
 .panel-head h2 { font-size: 16px; letter-spacing: -0.01em; }
 
-/* ---------- zone de dépôt ---------- */
+/* ---------- drop zone ---------- */
 
 .drop {
   margin: 20px;
@@ -246,7 +246,7 @@ main {
 .drop .file { margin-top: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--accent-color); }
 input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
-/* ---------- champs ---------- */
+/* ---------- fields ---------- */
 
 .opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px 20px; padding: 0 20px 20px; }
 .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
@@ -292,7 +292,7 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 .check input { accent-color: var(--accent-color); width: auto; }
 .check span { font-size: 13.5px; color: var(--text-muted); }
 
-/* ---------- boutons ---------- */
+/* ---------- buttons ---------- */
 
 .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 18px 20px; border-top: 1px solid var(--border-color); }
 
@@ -322,7 +322,7 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 
 .hint { font-size: 13px; color: var(--text-faint); margin-left: auto; text-align: right; }
 
-/* ---------- résultat ---------- */
+/* ---------- result ---------- */
 
 .meta { display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
 .chip {
@@ -336,7 +336,7 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 }
 .chip b { color: var(--secondary-color); font-weight: 600; }
 
-/* ---------- rendu de la build order ---------- */
+/* ---------- build order rendering ---------- */
 
 .head-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
@@ -367,8 +367,8 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 .sect h4 { font-family: var(--font-title); font-size: 17px; font-weight: 600; margin: 0 0 12px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .sect h5 { font-family: var(--font-title); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); margin: 20px 0 8px; }
 
-/* CSS_TOPOLOGY.md §6 : le débordement se gère dans son propre conteneur,
-   jamais en laissant la page défiler latéralement. */
+/* CSS_TOPOLOGY.md §6: overflow is handled inside its own container, never by
+   letting the page scroll sideways. */
 .scroll { overflow-x: auto; max-height: 42vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; }
 
 .view table { border-collapse: collapse; width: 100%; font-size: 13px; }
@@ -434,7 +434,7 @@ footer {
 footer a { color: var(--accent-color); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
 
-/* CSS_TOPOLOGY.md §7 : la paire est 767.98px / 768px, jamais 768px des deux côtés. */
+/* CSS_TOPOLOGY.md §7: the pair is 767.98px / 768px, never 768px on both sides. */
 @media (max-width: 767.98px) {
   .masthead-in { padding: 22px 18px 18px; }
   .wordmark { font-size: 25px; }

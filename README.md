@@ -1,158 +1,170 @@
 # ⚔️ SC2 Build Order Forge
 
-Déposez un replay StarCraft II, récupérez sa build order en Markdown, prête à coller
-dans Claude pour une analyse de coach.
+Drop a StarCraft II replay, get its build order as Markdown, ready to paste into
+Claude for a coaching pass.
 
-En production sur **[sc2.eole.me](https://sc2.eole.me)**. Le même moteur s'utilise en
-ligne de commande, sans passer par le site.
+Live at **[sc2.eole.me](https://sc2.eole.me)**. The same engine runs from the
+command line, without going through the site.
 
 ---
 
-## Ce que ça extrait
+## What it pulls out
 
-Au-delà de la suite « ravitaillement / temps / action », le rendu contient trois
-sections que le replay permet de calculer sans rien deviner :
+Beyond the supply / time / action sequence, three sections the replay lets us
+compute rather than guess:
 
-| Section | D'où viennent les chiffres |
+| Section | Where the numbers come from |
 |---|---|
-| **Économie** | Les relevés que le jeu écrit lui-même toutes les ~160 frames : ravitaillement utilisé *et* capacité, travailleurs actifs, ressources en banque, revenus. |
-| **Ravitaillement bloqué** | Les plages où l'utilisé rejoint la capacité — la production est alors à l'arrêt. Le plafond de 200 est ignoré : ce n'est pas une erreur de joueur. |
-| **Pertes au combat** | Les unités mortes avec un tueur identifié. Les drones mutés en bâtiments sont exclus : sur une partie de test, 67 « pertes » de drones se décomposaient en 36 vraies morts et 31 mutations. |
+| **Economy** | The samples the game writes itself every ~160 frames: supply used *and* cap, active workers, banked resources, income. |
+| **Supply blocked** | The stretches where used meets cap — production has stalled. The 200 cap is ignored: that is not a player mistake. |
+| **Combat losses** | Units that died with an identified killer. Drones morphed into buildings are excluded: on one test game, 67 drone "losses" broke down into 36 real deaths and 31 morphs. |
 
-Le symbole ⚡ marque une production accélérée au Chrono Boost.
+The ⚡ symbol marks production sped up with Chrono Boost.
 
 ---
 
-## En ligne de commande
+## From the command line
 
-`cli.py` déclare ses dépendances dans son en-tête : `uv` les installe au premier
-lancement, il n'y a rien à préparer.
+`cli.py` declares its dependencies in its own header: `uv` installs them on
+first run, there is nothing to set up.
 
 ```bash
-uv run cli.py --last                       # la dernière partie jouée
+uv run cli.py --last                       # the most recent game
 uv run cli.py --last 3 --cutoff 8:00 --clip
-uv run cli.py --list 20                    # lister les replays récents
-uv run cli.py "partie.SC2Replay" --player Éole --format raw --output bo.md
+uv run cli.py --list 20                    # list recent replays
+uv run cli.py "game.SC2Replay" --player Éole --format raw --output bo.md
 ```
 
-Le dossier de replays est détecté tout seul, y compris à travers la redirection
-OneDrive sous WSL. `SC2_REPLAY_DIR` ou `--replay-dir` le forcent.
+The replay folder is found on its own, including through the OneDrive
+redirection under WSL. `SC2_REPLAY_DIR` or `--replay-dir` override it.
 
-| Option | Effet |
+| Option | Effect |
 |---|---|
-| `--cutoff MM:SS` | Ne garder que le début de la partie — souvent le seul moment qui compte. |
-| `--player NOM` | Un seul camp. Répétable. Accepte un nom partiel ou un numéro. |
-| `--all-players` | Inclure l'IA et les forces neutres (Coop). |
-| `--workers` | `summary` (défaut), `all` pour lister chaque travailleur, `none`. |
-| `--format` | `table` (défaut), `list`, ou `raw` aligné en colonnes. |
-| `--lang` | `fr` (défaut) ou `en` — langue du Markdown produit. |
-| `--no-prompt` | Sans la consigne de coaching en tête. |
+| `--cutoff MM:SS` | Keep only the opening — often the only part that matters. |
+| `--player NAME` | A single side. Repeatable. Takes a partial name or a number. |
+| `--all-players` | Include the AI and neutral forces (co-op). |
+| `--workers` | `summary` (default), `all` to list every worker, `none`. |
+| `--format` | `table` (default), `list`, or `raw` aligned in columns. |
+| `--lang` | `fr` (default) or `en` — language of the generated Markdown. |
+| `--no-prompt` | Without the coaching prompt on top. |
 
 ---
 
-## Développement
+## Development
 
 ```bash
-make venv     # environnement Python
+make venv     # Python environment
 make test     # 58 tests
-make up       # conteneur sur http://localhost:3050
+make up       # container on http://localhost:3050
 make logs
 make down
 ```
 
-## Déploiement
+## Deployment
 
 ```bash
-make deploy   # image ghcr.io + secrets Doppler + redémarrage sur le VPS
+make deploy   # ghcr.io image + Doppler secrets + restart on the VPS
 make checklogs
 ```
 
-L'image est construite et poussée sur `ghcr.io` par GitHub Actions à chaque push sur
-`main`, après passage des tests. `make deploy` ne fait que tirer l'image et
-redémarrer le conteneur.
+The image is built and pushed to `ghcr.io` by GitHub Actions on every push to
+`main`, after the tests pass. `make deploy` only pulls the image and restarts
+the container.
 
 > [!IMPORTANT]
-> `sc2.eole.me` doit avoir un enregistrement DNS **A** vers l'IP du VPS *avant* le
-> premier déploiement. Traefik obtient son certificat par challenge HTTP : sans
-> résolution DNS, Let's Encrypt échoue et le service reste inaccessible en HTTPS.
-> Il n'y a pas de wildcard sur `eole.me`, chaque sous-domaine a son enregistrement.
+> `sc2.eole.me` needs an **A** record pointing at the VPS *before* the first
+> deployment. Traefik gets its certificate through an HTTP challenge: with no
+> DNS resolution, Let's Encrypt fails and the service stays unreachable over
+> HTTPS. There is no wildcard on `eole.me`; every subdomain has its own record.
 
 ---
 
 ## Architecture
 
 ```text
-sc2bo/extract.py     Moteur : lecture du replay, calculs, rendu Markdown
-cli.py               Interface ligne de commande (script uv autonome)
-server.py            Service HTTP FastAPI
-public/index.html    Interface web, sans build ni dépendance JS
-public/css/styles.css Charte graphique eole.me
-public/js/            translations.js (FR/EN) et app.js (thème, langue, envoi)
-docker/              Dockerfile + compose local et production
+sc2bo/extract.py      Engine: read the replay, compute, render
+cli.py                Command line (standalone uv script)
+server.py             FastAPI service
+public/index.html     Web interface, no build step, no JS dependency
+public/css/styles.css eole.me brand guidelines
+public/js/            translations.js (FR/EN) and app.js (theme, language, upload)
+docker/               Dockerfile plus local and production compose
 ```
 
-L'interface suit la charte documentée dans `www/DESIGN_SYSTEM.md` du dépôt
-`eoleme-www` : persona *business*, fond `#080b11`, accent cyan `#38bdf8`,
-typographie Outfit / Inter / Fira Code. Comme `trail-mapper`, c'est une
-feuille de style locale qui reprend les **noms de tokens** de la charte plutôt
-qu'un import distant — les sous-pages autonomes ne partagent pas le bundle du
-site. Les pièges de `www/CSS_TOPOLOGY.md` sont respectés : pas de `100vw`,
-`100dvh` en complément de `100vh`, points de rupture `767.98px` / `768px`.
+The command line and the site share the very same engine: a fix in `sc2bo/`
+serves both.
 
-La CLI et le site partagent exactement le même moteur : une correction faite dans
-`sc2bo/` vaut pour les deux.
+### One report, two renderings
 
-### Le contrat du service
+`build_report()` returns the intermediate structure both the Markdown and the
+HTML derive from. Without it the server would render Markdown while the page
+built its own HTML, and the two would drift on the first change. The response
+also carries the labels the server used, so the page renders in exactly the
+Markdown's words rather than holding a second copy.
 
-| Route | Rôle |
+### The service contract
+
+| Route | Role |
 |---|---|
-| `POST /api/extract` | Multipart : `replay`, plus `cutoff`, `players`, `format`, `workers`, `prompt`, `lang`. Renvoie `{markdown, report, labels, meta, ms}`. |
-| `GET /api/health` | État, version, plafond de taille, usage du jour. |
-| `GET /` | L'interface. |
+| `POST /api/extract` | Multipart: `replay`, plus `cutoff`, `players`, `format`, `workers`, `prompt`, `lang`. Returns `{markdown, report, labels, meta, ms}`. |
+| `GET /api/health` | Status, version, size cap, usage for the day. |
+| `GET /` | The interface. |
 
-Le replay est écrit dans un fichier temporaire le temps du parsing puis supprimé
-dans un `finally` : **rien n'est conservé**. La télémétrie ne transporte ni
-pseudonyme ni contenu de replay — carte, matchup, durées et tailles suffisent.
+The replay is written to a temporary file for the duration of the parse then
+removed in a `finally`: **nothing is kept**. Telemetry carries neither player
+names nor replay content — map, matchup, durations and sizes are enough.
 
-### Réglages
+### Settings
 
-| Variable | Défaut | Rôle |
+| Variable | Default | Role |
 |---|---|---|
-| `SC2BO_MAX_UPLOAD_BYTES` | 12 Mo | Plafond de taille. Un replay dépasse rarement 3 Mo. Traefik coupe déjà au même seuil. |
-| `SC2BO_PARSE_TIMEOUT_S` | 45 | Au-delà, la requête rend la main plutôt que d'occuper le serveur. |
-| `SC2BO_FEEDBACK_THRESHOLD` | 50 | Extractions par jour au-delà desquelles un événement `usage_threshold_crossed` est émis. Le site n'est pas limité pour autant : ce seuil sert à décider s'il faut le devenir. |
-| `TELEMETRY_WEBHOOK_URL` | `http://vector:8080` | Vector, qui relaie vers Axiom. Vide = les événements restent sur la sortie standard. |
+| `SC2BO_MAX_UPLOAD_BYTES` | 12 MB | Size cap. A replay rarely goes past 3 MB. Traefik cuts at the same threshold already. |
+| `SC2BO_PARSE_TIMEOUT_S` | 45 | Past this the request gives up rather than holding the server. |
+| `SC2BO_FEEDBACK_THRESHOLD` | 50 | Extractions per day past which a `usage_threshold_crossed` event is emitted. The site is not throttled: the threshold exists to decide whether it should be. |
+| `TELEMETRY_WEBHOOK_URL` | `http://vector:8080` | Vector, which relays to Axiom. Empty means events stay on stdout. |
 
-Le compteur d'usage vit en mémoire : un redémarrage le remet à zéro. C'est
-volontaire — on cherche un ordre de grandeur, pas une comptabilité.
+The usage counter lives in memory: a restart resets it. That is deliberate — we
+want an order of magnitude, not accounting.
 
 ---
 
-## Une bizarrerie de spawningtool à connaître
+## Brand guidelines
 
-`spawningtool` perd **12 replays sur 495** sur ce corpus, tous avec un `KeyError`.
-En Coop et sur les cartes à camps neutres, le replay porte des améliorations
-appartenant à des joueurs absents de sa table (forces d'Amon, civils). Tous ses
-gestionnaires d'événements vérifient l'appartenance avant d'indexer — sauf
-`add_upgrade_event`, qui ne teste que le joueur 0.
+The interface follows the guidelines documented in `www/DESIGN_SYSTEM.md` of the
+`eoleme-www` repository: *business* persona, `#080b11` ground, `#38bdf8` cyan
+accent, Outfit / Inter / Fira Code typography. Like `trail-mapper`, this is a
+local stylesheet reusing the guidelines' **token names** rather than a remote
+import — standalone sub-pages do not share the main site's generated bundle. The
+traps in `www/CSS_TOPOLOGY.md` are respected: no `100vw`, `100dvh` alongside
+`100vh`, `767.98px` / `768px` breakpoints.
 
-`patch_spawningtool()` lui ajoute le même garde-fou au chargement, ce qui ramène le
-corpus à **495/495**. Le correctif est idempotent et vérifie qu'il ne s'applique
-qu'une fois. À retirer le jour où la bibliothèque le corrige en amont.
+---
 
-Deuxième piège du même terrain : certaines unités Coop arrivent **sans nom**.
-`pretty()` les rend « unité inconnue » plutôt que de faire tomber le rendu.
+## A spawningtool quirk worth knowing
+
+`spawningtool` loses **12 replays out of 495** on this corpus, all to the same
+`KeyError`. In co-op and on maps with neutral camps, a replay carries upgrades
+belonging to players absent from its table (Amon's forces, civilians). Every one
+of its event handlers checks membership before indexing — except
+`add_upgrade_event`, which only tests for player 0.
+
+`patch_spawningtool()` adds the same guard at import time, which brings the
+corpus back to **495/495**. The patch is idempotent and checks it only applies
+once. Drop it the day the library fixes this upstream.
+
+A second trap on the same ground: some co-op units arrive **with no name**.
+`pretty()` renders them as "unknown unit" rather than bringing the render down.
 
 ---
 
 ## Tests
 
-Aucun replay n'est versionné : ce sont des parties privées, et un `.SC2Replay`
-contient les pseudonymes des deux joueurs. La suite couvre donc les fonctions pures
-(découpage des noms, détection des blocages, cohérence du tableau d'économie,
-sélection des joueurs) et le contrat HTTP (validation, plafond de taille, fichier
-illisible, compteur d'usage). Les vérifications sur de vrais fichiers se font à la
-main avec `cli.py`.
+No replay is versioned: these are private games, and a `.SC2Replay` holds both
+players' handles. The suite therefore covers the pure functions (name splitting,
+block detection, economy-table consistency, player selection), the Markdown
+rendered from a synthetic report, and the HTTP contract (validation, size cap,
+unreadable file, usage counter, language negotiation). Checks against real files
+are done by hand with `cli.py`.
 
 ---
 

@@ -1,7 +1,7 @@
 """
-Service HTTP de sc2.eole.me : on dépose un .SC2Replay, on récupère sa build order
-en Markdown. Rien n'est conservé — le fichier est écrit dans un temporaire le temps
-du parsing, puis supprimé dans un `finally`.
+The HTTP service behind sc2.eole.me: drop a .SC2Replay, get its build order as
+Markdown. Nothing is kept — the file is written to a temporary path for the
+duration of the parse, then removed in a `finally`.
 """
 
 from __future__ import annotations
@@ -34,26 +34,25 @@ from sc2bo.extract import (
     render_markdown,
 )
 
-# Un replay de 40 minutes pèse ~2 Mo ; 12 Mo laissent large sans permettre à un
-# envoi de plusieurs gigaoctets de saturer le VPS. Ce n'est pas une restriction
-# d'accès, c'est ce qui garde le service debout.
+# A 40-minute replay weighs ~2 MB; 12 MB leaves plenty of room without letting a
+# multi-gigabyte upload swamp the VPS. This is not an access restriction, it is
+# what keeps the service standing.
 MAX_UPLOAD_BYTES = int(os.environ.get("SC2BO_MAX_UPLOAD_BYTES", 12 * 1024 * 1024))
 PARSE_TIMEOUT_S = float(os.environ.get("SC2BO_PARSE_TIMEOUT_S", 45))
 TELEMETRY_WEBHOOK_URL = os.environ.get("TELEMETRY_WEBHOOK_URL", "")
 
-# Le site est ouvert à tous ; ce seuil n'interdit rien, il déclenche un événement
-# quand l'usage quotidien décolle, pour décider en connaissance de cause s'il faut
-# ajouter des limites. Compteur en mémoire : un redémarrage le remet à zéro, ce qui
-# est acceptable pour un signal d'ordre de grandeur.
+# The site is open to everyone; this threshold forbids nothing, it emits an event
+# when daily usage takes off, so the call on adding limits can be made on evidence.
+# In-memory counter: a restart resets it, which is fine for an order of magnitude.
 FEEDBACK_THRESHOLD = int(os.environ.get("SC2BO_FEEDBACK_THRESHOLD", 50))
 
-# Résolu par rapport au fichier, pas au répertoire courant : les tests tournent
-# depuis la racine du dépôt, le conteneur depuis /app.
+# Resolved against the file, not the working directory: the tests run from the
+# repository root, the container from /app.
 _VERSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
 VERSION = open(_VERSION_FILE).read().strip() if os.path.exists(_VERSION_FILE) else "0.0.0"
 
-# Les messages d'erreur suivent la langue de l'interface : une page en anglais
-# qui répond en français est une demi-traduction.
+# Error messages follow the interface language: an English page answering in
+# French is a half-translation.
 MESSAGES = {
     "fr": {
         "too_big": "Fichier trop lourd : la limite est de {mb} Mo. Un replay StarCraft II "
@@ -99,7 +98,7 @@ def _today() -> str:
 
 
 def record_usage() -> bool:
-    """Incrémente le compteur du jour. Renvoie True au franchissement du seuil."""
+    """Bump today's counter. Returns True on the crossing of the threshold."""
     day = _today()
     if _usage["day"] != day:
         _usage.update(day=day, count=0, announced=False)
@@ -112,10 +111,10 @@ def record_usage() -> bool:
 
 def emit(event: str, **fields) -> None:
     """
-    Journalise sur stdout — Vector récupère par label et pousse vers Axiom — et
-    pousse en plus l'événement au webhook de télémétrie s'il est configuré.
-    Aucun nom de joueur ni contenu de replay ne sort d'ici : la carte, le matchup
-    et les durées suffisent à mesurer l'usage.
+    Log to stdout — Vector collects by label and ships to Axiom — and also push
+    the event to the telemetry webhook when one is configured.
+    No player name and no replay content leaves here: map, matchup and durations
+    are enough to measure usage.
     """
     payload = {
         "event": event,
@@ -137,7 +136,7 @@ def emit(event: str, **fields) -> None:
         )
         urllib.request.urlopen(request, timeout=2).close()
     except (urllib.error.URLError, OSError, ValueError) as exc:
-        # La télémétrie ne doit jamais faire échouer une extraction.
+        # Telemetry must never make an extraction fail.
         print(json.dumps({"event": "telemetry_failed", "reason": str(exc)}), flush=True)
 
 
@@ -161,7 +160,7 @@ async def read_capped(upload: UploadFile, lang: str = "fr") -> bytes:
 
 
 def extract_markdown(path: str, options: Options, with_prompt: bool) -> tuple[str, dict, dict]:
-    """Renvoie (markdown à copier, rapport à afficher, résumé pour la télémétrie)."""
+    """Return (markdown to copy, report to display, summary for telemetry)."""
     data, stats = read_replay(path)
     report = build_report(data, stats, options)
     markdown = render_markdown(report, options)
@@ -247,8 +246,8 @@ async def extract(
     if crossed:
         emit("usage_threshold_crossed", threshold=FEEDBACK_THRESHOLD, count=_usage["count"])
 
-    # Les libellés voyagent avec le rapport : le client rend son HTML avec exactement
-    # les mêmes mots que le Markdown, sans en tenir une seconde copie.
+    # The labels travel with the report: the client renders its HTML in exactly
+    # the Markdown's words, without holding a second copy.
     return JSONResponse({
         "markdown": markdown,
         "report": report,
@@ -258,6 +257,6 @@ async def extract(
     })
 
 
-# Monté en dernier : le catch-all statique ne doit pas masquer les routes /api.
+# Mounted last: the static catch-all must not shadow the /api routes.
 _PUBLIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "public")
 app.mount("/", StaticFiles(directory=_PUBLIC_DIR, html=True), name="public")

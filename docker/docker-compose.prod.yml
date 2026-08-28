@@ -19,8 +19,8 @@ services:
       - "traefik.http.routers.eoleme-sc2-build-order.tls=true"
       - "traefik.http.routers.eoleme-sc2-build-order.tls.certresolver=letsencrypt"
       - "traefik.http.services.eoleme-sc2-build-order.loadbalancer.server.port=3000"
-      # Traefik refuse un corps plus gros que le plafond applicatif : l'upload est
-      # coupé au proxy avant d'atteindre le conteneur.
+      # Traefik refuses a body larger than the application cap: the upload is cut
+      # at the proxy before it reaches the container.
       - "traefik.http.middlewares.sc2bo-limit.buffering.maxRequestBodyBytes=12582912"
       - "traefik.http.middlewares.sc2bo-limit.buffering.memRequestBodyBytes=2097152"
       - "traefik.http.routers.eoleme-sc2-build-order.middlewares=sc2bo-limit"

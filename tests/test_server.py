@@ -1,6 +1,6 @@
 """
-Tests du service HTTP : validation des paramètres, plafond de taille, et
-comportement face à un fichier qui n'est pas un replay.
+Tests for the HTTP service: parameter validation, size cap, and behaviour when
+handed a file that is not a replay.
 """
 
 import io
@@ -48,8 +48,8 @@ class TestValidation:
         assert "MM:SS" in response.json()["detail"]
 
     def test_accepts_a_well_formed_cutoff(self, client):
-        # Le fichier reste invalide : on doit dépasser la validation et échouer
-        # sur le parsing, pas sur le format du repère de temps.
+        # The file stays invalid: we must get past validation and fail on the
+        # parse, not on the time marker's format.
         assert upload(client, cutoff="8:00").status_code == 422
 
     def test_rejects_empty_file(self, client):

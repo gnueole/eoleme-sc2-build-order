@@ -1,9 +1,9 @@
 """
-Tests des fonctions pures du moteur d'extraction.
+Tests for the extraction engine's pure functions.
 
-Aucun replay n'est versionné : ce sont des parties privées, et un .SC2Replay
-contient les pseudonymes des deux joueurs. Les tests qui ont besoin d'un vrai
-fichier sont donc à lancer à la main via cli.py.
+No replay is versioned: these are private games, and a .SC2Replay holds both
+players' handles. Tests that need a real file are therefore run by hand through
+cli.py.
 """
 
 import re
@@ -44,7 +44,7 @@ class TestPretty:
         assert pretty("Terran Infantry Weapons Level 1") == "Terran Infantry Weapons Level 1"
 
     def test_survives_missing_name(self):
-        # Certaines unités Coop arrivent sans nom ; le rendu ne doit pas casser.
+        # Some co-op units arrive with no name; the render must not break.
         assert pretty(None) == "unité inconnue"
         assert pretty("") == "unité inconnue"
 
@@ -80,7 +80,7 @@ class TestSupplyBlocks:
         assert supply_blocks(samples, 22.4, 120) == []
 
     def test_ignores_the_200_cap(self):
-        # Être à 200/200 n'est pas une erreur de joueur, c'est le plafond du jeu.
+        # Sitting at 200/200 is not a player mistake, it is the game's cap.
         samples = self.make([(0, 200, 200), (224, 200, 200), (448, 200, 200)])
         assert supply_blocks(samples, 22.4, 120) == []
 
@@ -91,8 +91,8 @@ class TestSupplyBlocks:
 
 class TestEconomyRows:
     def test_reads_supply_and_workers_at_the_same_instant(self):
-        # Le jeu n'échantillonne que toutes les 160 frames : la ligne d'une minute
-        # doit reprendre le dernier relevé disponible, pas un mélange.
+        # The game only samples every 160 frames: a minute's row must take the
+        # last available reading, not a blend of two.
         samples = [
             {"frame": 1, "food_used": 12, "food_made": 15, "workers": 12,
              "minerals": 50, "vespene": 0, "mineral_rate": 0, "vespene_rate": 0},
@@ -119,7 +119,7 @@ class TestSelectPlayers:
         assert [pid for pid, _ in select_players(d, [], False)] == [1, 2]
 
     def test_many_players_keeps_only_humans(self):
-        # En Coop, les forces d'Amon ne sont pas des adversaires à analyser.
+        # In co-op, Amon's forces are not opponents worth analysing.
         d = self.data({
             1: {"name": "Éole", "is_human": True},
             2: {"name": "Arkenston", "is_human": True},
@@ -172,7 +172,7 @@ class TestOptions:
 
 class TestLanguages:
     def test_both_catalogues_hold_the_same_keys(self):
-        # Une clé oubliée d'un côté produit un libellé en dur dans l'autre langue.
+        # A key forgotten on one side leaves a hardcoded label in the other language.
         assert set(LABELS["fr"]) == set(LABELS["en"])
 
     def test_unknown_language_falls_back_to_french(self):
@@ -187,7 +187,7 @@ class TestLanguages:
         assert pretty("SupplyDepot", "en") == pretty("SupplyDepot", "fr") == "Supply Depot"
 
     def test_french_keeps_the_space_before_colons(self):
-        # Règle typographique française ; l'anglais ne la suit pas.
+        # A French typographic rule; English does not follow it.
         assert LABELS["fr"]["colon"] == " :"
         assert LABELS["en"]["colon"] == ":"
 
@@ -223,15 +223,15 @@ class TestOptionsLanguage:
 
 class TestReportContract:
     """
-    Le HTML du client se construit à partir des libellés que le serveur renvoie.
-    Si une clé disparaît côté Python, l'affichage casse sans que rien ne le dise :
-    ce test relie les deux.
+    The client's HTML is built from the labels the server returns. If a key
+    disappears on the Python side the view breaks with nothing to say so: this
+    test ties the two together.
     """
 
     def client_keys(self):
         app = Path(__file__).resolve().parents[1] / "public" / "js" / "app.js"
         source = app.read_text(encoding="utf-8")
-        # L.duration, L["col_time"], et les clés listées pour l'entête d'économie.
+        # L.duration, L["col_time"], and the keys listed for the economy header.
         keys = set(re.findall(r"\bL\.([a-z_]+)\b", source))
         keys |= set(re.findall(r'\bL\["([a-z_]+)"\]', source))
         keys |= set(re.findall(r'"(col_[a-z_]+)"', source))
@@ -244,8 +244,8 @@ class TestReportContract:
         assert not missing_en, f"libellés absents en en : {missing_en}"
 
     def test_the_page_actually_uses_labels(self):
-        # Garde-fou du garde-fou : si l'extraction ne trouve rien, le test au-dessus
-        # passerait pour de mauvaises raisons.
+        # A guard on the guard: if the extraction finds nothing, the test above
+        # would pass for the wrong reason.
         assert len(self.client_keys()) >= 10
 
 
@@ -278,7 +278,7 @@ class TestRenderMarkdownFromReport:
         md = render_markdown(self.report(), Options(format="table"))
         assert "# Ley Lines — TvZ" in md
         assert "| 14 | 0:20 | Supply Depot |" in md
-        assert "⚡" in md                      # le chrono est signalé
+        assert "⚡" in md                      # the chrono is flagged
         assert "### Économie" in md
         assert "Ravitaillement bloqué" in md
         assert "MULE ×3" in md

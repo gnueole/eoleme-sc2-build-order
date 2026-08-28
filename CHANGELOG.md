@@ -1,75 +1,74 @@
 # Changelog
 
-Toutes les évolutions notables de SC2 Build Order Forge.
-Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
-et le versionnage [SemVer](https://semver.org/lang/fr/).
+Every notable change to SC2 Build Order Forge.
+Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+versioning follows [SemVer](https://semver.org/).
 
 ## [1.3.0] — 2026-08-28
 
-### Ajouté
-- **La build order s'affiche en HTML** plutôt qu'en Markdown brut : vraies
-  tables, ravitaillement en couleur, ⚡ sur les productions accélérées,
-  ravitaillement en butée signalé en rouge dans le tableau d'économie, verdicts
-  et blocages en pastilles. Le bouton **Copier le Markdown** reste, et une
-  bascule *Aperçu / Markdown* permet de voir ce que l'on copie.
+### Added
+- **The build order renders as HTML** rather than raw Markdown: real tables,
+  supply in colour, a bolt on chrono-boosted production, supply at its cap
+  flagged red in the economy table, verdicts and blocks as pills. The **Copy the
+  Markdown** button stays, and a *Preview / Markdown* toggle shows what is being
+  copied.
 
-### Modifié
-- Le moteur expose désormais `build_report()`, une structure intermédiaire dont
-  le Markdown **et** le HTML dérivent tous les deux. Sans elle, le serveur
-  rendrait le Markdown pendant que le client fabriquerait son HTML de son côté,
-  et les deux dériveraient au premier changement. `render_replay()` est conservé
-  comme raccourci : la sortie Markdown est inchangée, vérifiée par comparaison
-  de 24 rendus (8 replays × 3 combinaisons d'options) avant et après le
-  découpage — zéro différence.
-- La réponse de `/api/extract` transporte le rapport **et les libellés employés**.
-  Le client rend donc son HTML avec exactement les mots du Markdown, sans en
-  tenir une seconde copie. Un test relie les clés utilisées par `app.js` au
-  dictionnaire Python : en supprimer une casserait l'affichage en silence.
+### Changed
+- The engine now exposes `build_report()`, the intermediate structure both the
+  Markdown **and** the HTML derive from. Without it the server would render
+  Markdown while the client built its own HTML, and the two would drift on the
+  first change. `render_replay()` remains as a shortcut: the Markdown output is
+  unchanged, verified by comparing 24 renders (8 replays × 3 option
+  combinations) before and after the split — no difference.
+- `/api/extract` returns the report **and the labels used**. The page therefore
+  renders its HTML in exactly the Markdown's words rather than holding a second
+  copy. A test ties the label keys `app.js` reads to the Python dictionary:
+  dropping one would break the view silently.
 
 ## [1.2.0] — 2026-08-28
 
-### Ajouté
-- **Thème clair / sombre / système**, à trois états comme `trail-mapper` : clé
-  `preferred-theme` (défaut `system`), classes `theme-light` / `theme-dark` de la
-  charte, et ré-application quand la préférence du système change en cours de
-  route. Un script inline pose le thème *avant* le premier rendu : sans lui, une
-  préférence claire voyait passer un éclair sombre.
-- **Interface bilingue FR / EN.** Clé `preferred-locale` comme `trail-mapper`, et
-  paramètre `?hl=fr` / `?hl=en` comme le blog, qui se nettoie de la barre
-  d'adresse après lecture. À la première visite, la langue du navigateur décide.
-- La traduction couvre aussi **le Markdown produit et les messages d'erreur du
-  serveur** : une interface anglaise qui rend des tableaux français et des
-  erreurs françaises serait une demi-traduction. `cli.py` gagne `--lang`.
-- L'anglais suit sa propre typographie : `**Map:**` sans espace avant les
-  deux-points, là où le français écrit `**Carte :**`.
+### Added
+- **Light / dark / system theming**, three states like `trail-mapper`: the
+  `preferred-theme` key defaults to `system`, the guidelines' `theme-light` /
+  `theme-dark` classes are stamped, and a system change is picked up live. An
+  inline script sets the theme *before* first paint; without it a light
+  preference flashed dark.
+- **Bilingual interface, FR / EN.** The `preferred-locale` key like
+  `trail-mapper`, and the blog's `?hl=fr` / `?hl=en` parameter, which is cleaned
+  out of the address bar once read. Browser language decides on a first visit.
+- The translation covers **the generated Markdown and the server's error
+  messages** too: an English interface returning French tables and French errors
+  would be a half-translation. `cli.py` gains `--lang`.
+- English follows its own typography: `**Map:**` with no space before the colon,
+  where French writes `**Carte :**`.
 
-### Modifié
-- Le script de la page passe dans `public/js/`, en deux modules — `translations.js`
-  et `app.js` — sur le modèle de `trail-mapper`.
+### Changed
+- The page script moved into `public/js/`, split into `translations.js` and
+  `app.js`, following `trail-mapper`.
 
 ## [1.1.0] — 2026-08-28
 
-### Modifié
-- L'interface suit la charte graphique eole.me (`www/DESIGN_SYSTEM.md`).
-  Persona *business* : fond `#080b11`, accent cyan `#38bdf8`, halo ambiant.
-  Typographie **Outfit / Inter / Fira Code**, les trois familles nommées dans la
-  charte. Les deux thèmes documentés sont gérés, là où `trail-mapper` s'en tient
-  au sombre.
-- Le style passe dans `public/css/styles.css`, comme chez `trail-mapper`, en
-  reprenant les *noms* de tokens de la charte plutôt que des valeurs isolées.
-- Points de rupture alignés sur la paire `767.98px` / `768px` imposée par
-  `www/CSS_TOPOLOGY.md`, et `100dvh` en complément de `100vh`.
+### Changed
+- The interface follows the eole.me brand guidelines (`www/DESIGN_SYSTEM.md`).
+  *Business* persona: `#080b11` ground, `#38bdf8` cyan accent, ambient glow.
+  Typography **Outfit / Inter / Fira Code**, the three families the guidelines
+  name. Both documented themes are supported, where `trail-mapper` ships dark
+  only.
+- The style moved into `public/css/styles.css`, like `trail-mapper`, reusing the
+  guidelines' *token names* rather than isolated values.
+- Breakpoints aligned on the `767.98px` / `768px` pair `www/CSS_TOPOLOGY.md`
+  requires, and `100dvh` alongside `100vh`.
 
 ## [1.0.0] — 2026-08-28
 
-### Ajouté
-- Extraction de la build order d'un replay StarCraft II en Markdown, prête à
-  coller dans Claude : service web sur `sc2.eole.me` et CLI `cli.py`, moteur
-  commun dans `sc2bo/`.
-- Économie tirée des relevés `PlayerStatsEvent` du jeu (ravitaillement utilisé
-  et capacité, travailleurs actifs, ressources, revenus), ce qui rend la
-  détection des blocages de ravitaillement exacte plutôt qu'estimée.
-- Pertes au combat séparées des drones mutés en bâtiments.
-- Garde-fou sur `add_upgrade_event` de spawningtool, seul gestionnaire de la
-  bibliothèque à indexer la table des joueurs sans vérifier la clé : fait passer
-  un corpus de 495 replays de 483 à 495 lus.
+### Added
+- Extract a StarCraft II replay's build order as Markdown, ready to paste into
+  Claude: a web service on `sc2.eole.me` and a `cli.py` command line, sharing
+  the engine in `sc2bo/`.
+- Economy figures taken from the game's own `PlayerStatsEvent` samples (supply
+  used and cap, active workers, resources, income), which makes supply-block
+  detection exact rather than estimated.
+- Combat losses separated from drones morphed into buildings.
+- A guard on spawningtool's `add_upgrade_event`, its only event handler that
+  indexes the player table without checking the key: it takes a 495-replay
+  corpus from 483 to 495 read.

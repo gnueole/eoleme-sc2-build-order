@@ -1,15 +1,15 @@
-/* Interface de sc2.eole.me.
-   Thème et langue suivent les conventions de trail-mapper : clés localStorage
-   `preferred-theme` (light | dark | system, défaut system) et `preferred-locale`.
-   Les classes appliquées sont celles de la charte (`theme-light` / `theme-dark`,
-   www/DESIGN_SYSTEM.md §4), et la langue accepte aussi `?hl=` comme le blog,
-   paramètre qui se nettoie de la barre d'adresse après lecture. */
+/* The sc2.eole.me interface.
+   Theme and language follow trail-mapper's conventions: the localStorage keys
+   `preferred-theme` (light | dark | system, default system) and
+   `preferred-locale`. The classes stamped are the guidelines' (`theme-light` /
+   `theme-dark`, www/DESIGN_SYSTEM.md §4), and the language also accepts `?hl=`
+   like the blog, a parameter cleaned out of the address bar once read. */
 
 import { TRANSLATIONS, LOCALES } from "./translations.js";
 
 const $ = (id) => document.getElementById(id);
 
-/* ---------- thème ---------- */
+/* ---------- theme ---------- */
 
 const THEMES = ["light", "dark", "system"];
 
@@ -28,7 +28,7 @@ function applyTheme(theme) {
   const meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute("content", resolved === "dark" ? "#080b11" : "#f8fafc");
 
-  try { localStorage.setItem("preferred-theme", theme); } catch (e) { /* mode privé */ }
+  try { localStorage.setItem("preferred-theme", theme); } catch (e) { /* private mode */ }
 
   document.querySelectorAll("[data-view-choice]").forEach((btn) =>
     btn.addEventListener("click", () => { view = btn.dataset.viewChoice; applyView(); }));
@@ -42,12 +42,12 @@ function storedTheme() {
   try { return localStorage.getItem("preferred-theme") || "system"; } catch (e) { return "system"; }
 }
 
-/* Un système qui bascule ne doit déplacer la page que si l'on suit le système. */
+/* A system that flips should only move the page when we are following it. */
 window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
   if (storedTheme() === "system") applyTheme("system");
 });
 
-/* ---------- langue ---------- */
+/* ---------- language ---------- */
 
 let locale = "fr";
 
@@ -61,7 +61,7 @@ function t(key, fields) {
 
 function setLanguage(lang) {
   locale = LOCALES.includes(lang) ? lang : "fr";
-  try { localStorage.setItem("preferred-locale", locale); } catch (e) { /* mode privé */ }
+  try { localStorage.setItem("preferred-locale", locale); } catch (e) { /* private mode */ }
   document.documentElement.lang = locale;
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
@@ -85,27 +85,27 @@ function setLanguage(lang) {
 }
 
 function initialLocale() {
-  /* Priorité : ?hl= (convention du blog) > choix mémorisé > langue du navigateur. */
+  /* Priority: ?hl= (the blog's convention) > stored choice > browser language. */
   try {
     const hl = new URLSearchParams(window.location.search).get("hl");
     if (hl && LOCALES.includes(hl)) return hl;
-  } catch (e) { /* URL exotique */ }
+  } catch (e) { /* exotic URL */ }
   try {
     const saved = localStorage.getItem("preferred-locale");
     if (saved && LOCALES.includes(saved)) return saved;
-  } catch (e) { /* mode privé */ }
+  } catch (e) { /* private mode */ }
   return (navigator.language || "fr").toLowerCase().startsWith("en") ? "en" : "fr";
 }
 
 function cleanUrl() {
-  /* Le paramètre a été lu : on le retire de la barre d'adresse sans recharger. */
+  /* The parameter has been read: drop it from the address bar without reloading. */
   try {
     const url = new URL(window.location.href);
     if (url.searchParams.has("hl")) {
       url.searchParams.delete("hl");
       history.replaceState(null, "", url.pathname + url.search + url.hash);
     }
-  } catch (e) { /* history indisponible */ }
+  } catch (e) { /* history unavailable */ }
 }
 
 /* ---------- extraction ---------- */
@@ -136,9 +136,9 @@ function esc(value) {
     ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 }
 
-/* Le HTML dérive du rapport renvoyé par le serveur, avec les libellés que le
-   serveur a lui-même employés pour le Markdown : les deux vues disent donc
-   exactement la même chose, dans les mêmes mots. */
+/* The HTML derives from the report the server returned, using the labels the
+   server itself used for the Markdown: both views therefore say exactly the
+   same thing, in the same words. */
 function renderReport(report, L) {
   const h = [];
 
@@ -197,8 +197,8 @@ function renderReport(report, L) {
           .map((k) => '<th class="num">' + esc(L[k]) + "</th>").join("") +
         "</tr></thead><tbody>");
       for (const r of s.economy) {
-        /* Le ravitaillement qui touche sa capacité est signalé : c'est le moment
-           où la production s'arrête, et c'est ce qu'on vient chercher ici. */
+        /* Supply meeting its cap is flagged: that is the moment production
+           stops, and it is what we came here to find. */
         const blocked = r.food_used >= r.food_made && r.food_made < 200;
         h.push('<tr><td class="num t">' + esc(r.at) +
           '</td><td class="num' + (blocked ? " bad" : "") + '">' +
@@ -295,7 +295,7 @@ function extract() {
     });
 }
 
-/* ---------- câblage ---------- */
+/* ---------- wiring ---------- */
 
 function wire() {
   const drop = $("drop");

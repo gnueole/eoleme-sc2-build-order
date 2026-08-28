@@ -2,8 +2,8 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Les dépendances d'abord : elles changent bien moins souvent que le code,
-# et cette couche reste alors en cache d'un build à l'autre.
+# Dependencies first: they change far less often than the code, so this layer
+# stays cached from one build to the next.
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
@@ -12,7 +12,7 @@ COPY server.py .
 COPY public ./public
 COPY VERSION .
 
-# Le service ne lit et n'écrit que des fichiers temporaires : il tourne sans privilèges.
+# The service only reads and writes temporary files: it runs unprivileged.
 RUN useradd --create-home --uid 10001 forge && chown -R forge:forge /app
 USER forge
 

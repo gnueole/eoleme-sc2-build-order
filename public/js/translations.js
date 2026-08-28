@@ -1,6 +1,6 @@
-/* Dictionnaire d'interface. Même structure que trail-mapper/public/js/translations.js :
-   une clé par chaîne, appliquée via les attributs data-i18n du HTML.
-   « Build Order Forge » n'est pas traduit : c'est le nom du produit. */
+/* Interface dictionary. Same shape as trail-mapper/public/js/translations.js:
+   one key per string, applied through the HTML's data-i18n attributes.
+   "Build Order Forge" is not translated: it is the product name. */
 
 export const TRANSLATIONS = {
   fr: {

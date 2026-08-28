@@ -1,4 +1,4 @@
-"""Extraction de build orders StarCraft II depuis les fichiers .SC2Replay."""
+"""Extract StarCraft II build orders from .SC2Replay files."""
 
 from .extract import (
     LANGUAGES,

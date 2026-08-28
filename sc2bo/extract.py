@@ -1,10 +1,10 @@
 """
-Lecture d'un replay StarCraft II et rendu de sa build order en Markdown.
+Read a StarCraft II replay and render its build order as Markdown.
 
-Les chiffres d'économie ne sont pas recalculés à partir des unités produites : ils
-viennent des relevés que le jeu écrit lui-même dans le replay toutes les ~160 frames
-(ravitaillement utilisé et disponible, travailleurs actifs, ressources, revenus).
-C'est ce qui permet de détecter les blocages de ravitaillement sans les deviner.
+Economy figures are not recomputed from the units produced: they come from the
+samples the game itself writes into the replay every ~160 frames (supply used and
+available, active workers, resources, income). That is what makes supply-block
+detection exact rather than guessed.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 
 @dataclass
 class Options:
-    """Ce que l'appelant — CLI ou serveur web — choisit d'afficher."""
+    """What the caller — command line or web service — chooses to show."""
 
     player: list[str] = field(default_factory=list)
     all_players: bool = False
@@ -38,12 +38,12 @@ class Options:
 
 def patch_spawningtool() -> None:
     """
-    En Coop et sur les cartes à camps neutres, le replay porte des améliorations
-    appartenant à des joueurs absents de la table (forces d'Amon, civils).
-    Tous les gestionnaires d'événements de spawningtool vérifient l'appartenance
-    avant d'indexer — sauf add_upgrade_event, qui ne teste que le joueur 0 et lève
-    un KeyError qui fait perdre le fichier entier. On lui ajoute le même garde-fou.
-    Mesuré sur un corpus de 495 replays : 12 fichiers récupérés.
+    In co-op and on maps with neutral camps, a replay carries upgrades belonging
+    to players absent from the table (Amon's forces, civilians). Every one of
+    spawningtool's event handlers checks membership before indexing — except
+    add_upgrade_event, which only tests for player 0 and raises a KeyError that
+    loses the whole file. We give it the same guard.
+    Measured on a 495-replay corpus: 12 files recovered.
     """
     from spawningtool.parser import GameParser
 
@@ -67,7 +67,7 @@ def patch_spawningtool() -> None:
 
 
 def read_replay(path: str) -> tuple[dict, dict]:
-    """Renvoie (données spawningtool, relevés du jeu par joueur)."""
+    """Return (spawningtool data, the game's own samples per player)."""
     from spawningtool.parser import GameParser
 
     parser = GameParser(path)
@@ -102,8 +102,8 @@ SPLIT_CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
 RACE_LETTER = {"Terran": "T", "Protoss": "P", "Zerg": "Z"}
 SUPPLY_CAP_MAX = 200
 
-# Les capacités portent des noms internes peu lisibles ; identiques dans les deux
-# langues, ce sont les termes que la communauté emploie tels quels.
+# Abilities carry unreadable internal names. Identical in both languages: these
+# are the terms the community uses as they are.
 ABILITY_LABELS = {
     "CalldownMULE": "MULE",
     "ChronoBoostEnergyCost": "Chrono Boost",
@@ -155,13 +155,13 @@ def labels(lang: str) -> dict:
 
 
 class ReplayError(ValueError):
-    """Le fichier n'est pas un replay exploitable."""
+    """The file is not a usable replay."""
 
 
 def pretty(name: str | None, lang: str = "fr") -> str:
     """
-    SupplyDepot -> Supply Depot ; SCV et « Combat Shields » restent intacts.
-    Certaines unités Coop arrivent sans nom : on ne casse pas le rendu pour autant.
+    SupplyDepot -> Supply Depot; SCV and "Combat Shields" are left alone.
+    Some co-op units arrive with no name: that must not bring the render down.
     """
     if not name:
         return labels(lang)["unknown_unit"]
@@ -174,7 +174,7 @@ def fmt_time(seconds: float) -> str:
 
 
 def parse_time(text: str) -> int:
-    """« 8:00 » ou « 480 » -> 480 secondes."""
+    """"8:00" or "480" -> 480 seconds."""
     text = str(text).strip()
     if not text:
         raise ValueError("durée vide")
@@ -189,14 +189,14 @@ def seconds_of(entry: dict, fps: float) -> float:
 
 
 # --------------------------------------------------------------------------
-# Sélection des joueurs
+# Player selection
 # --------------------------------------------------------------------------
 
 
 def select_players(data: dict, wanted: list[str], every: bool) -> list[tuple[int, dict]]:
     """
-    Par défaut : les deux camps d'une partie à deux joueurs, sinon les seuls humains
-    — ce qui écarte les forces d'Amon et les factions neutres en Coop.
+    By default: both sides of a two-player game, otherwise the humans only —
+    which leaves out Amon's forces and the neutral factions in co-op.
     """
     players = sorted(data["players"].items())
 
@@ -238,7 +238,7 @@ def build_order_rows(player: dict, fps: float, cutoff: int | None, workers: str)
 
 
 def economy_rows(samples: list[dict], fps: float, end: float, step: int) -> list[dict]:
-    """Un relevé par tranche de `step` secondes, pris au dernier échantillon du jeu."""
+    """One reading per `step` seconds, taken at the game's last sample."""
     if not samples:
         return []
     rows = []
@@ -256,8 +256,8 @@ def economy_rows(samples: list[dict], fps: float, end: float, step: int) -> list
 
 def supply_blocks(samples: list[dict], fps: float, end: float, minimum: float = 5.0) -> list[str]:
     """
-    Plages où le ravitaillement utilisé atteint la capacité : la production est à
-    l'arrêt. On ignore le plafond de 200, qui n'est pas une erreur de joueur.
+    Stretches where supply used meets the cap: production has stalled. The 200
+    cap is ignored, since that is not a player mistake.
     """
     blocks, start, previous = [], None, None
     for sample in samples:
@@ -284,7 +284,7 @@ def summarise(entries: list[dict], lang: str = "fr", top: int | None = None) -> 
 
 
 def describe_replay(data: dict) -> dict:
-    """Résumé court, pour l'interface et la télémétrie. Sans nom de joueur."""
+    """Short summary, for the interface and telemetry. No player names."""
     fps = data["frames_per_second"]
     players = sorted(data["players"].items())
     matchup = None
@@ -308,9 +308,9 @@ def describe_replay(data: dict) -> dict:
 
 def build_report(data: dict, stats: dict[int, list[dict]], options: Options) -> dict:
     """
-    La forme intermédiaire dont dérivent le Markdown *et* l'affichage HTML.
-    Sans elle, le serveur rendrait le Markdown et le client fabriquerait son HTML
-    de son côté : les deux dériveraient au premier changement.
+    The intermediate shape both the Markdown *and* the HTML view derive from.
+    Without it the server would render Markdown while the client built its own
+    HTML, and the two would drift on the first change.
     """
     L = labels(options.lang)
     lang = options.lang
@@ -392,7 +392,7 @@ def build_report(data: dict, stats: dict[int, list[dict]], options: Options) -> 
             section["macro"] = [{"name": n, "count": c} for n, c in counts.most_common()]
 
             losses = [e for e in p["unitsLost"] if cutoff is None or seconds_of(e, fps) <= cutoff]
-            # killer=None : mutation en bâtiment ou sabordage, pas une perte au combat.
+            # killer=None: morphed into a building or self-destructed, not a combat loss.
             killed = [e for e in losses if e["killer"] is not None and e["killer"] != pid]
             lost = Counter(pretty(e["name"], lang) for e in killed)
             section["losses"] = {
@@ -406,7 +406,7 @@ def build_report(data: dict, stats: dict[int, list[dict]], options: Options) -> 
 
 
 def render_markdown(report: dict, options: Options) -> str:
-    """Le Markdown, rendu depuis le rapport et lui seul."""
+    """The Markdown, rendered from the report and nothing else."""
     L = labels(report["lang"])
     c = L["colon"]
     out: list[str] = []
@@ -503,7 +503,7 @@ def render_markdown(report: dict, options: Options) -> str:
 
 
 def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) -> str:
-    """Raccourci historique : rapport puis Markdown, en un appel."""
+    """Long-standing shortcut: report then Markdown, in one call."""
     return render_markdown(build_report(data, stats, options), options)
 
 

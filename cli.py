@@ -4,17 +4,17 @@
 # dependencies = ["spawningtool>=3.0.0"]
 # ///
 """
-Extrait la build order d'un replay StarCraft II en Markdown, prêt à coller dans Claude.
+Extract a StarCraft II replay's build order as Markdown, ready to paste into Claude.
 
     uv run cli.py --last
     uv run cli.py --last 3 --cutoff 8:00 --clip
-    uv run cli.py "/chemin/partie.SC2Replay" --output bo.md
+    uv run cli.py "/path/game.SC2Replay" --output bo.md
     uv run cli.py --list 20
 
-Le dossier de replays est détecté tout seul (y compris via OneDrive sous WSL) ;
-SC2_REPLAY_DIR ou --replay-dir permettent de le forcer.
+The replay folder is found on its own (including through OneDrive under WSL);
+SC2_REPLAY_DIR or --replay-dir override it.
 
-Même moteur que le site sc2.eole.me : tout est dans le paquet sc2bo/.
+Same engine as the sc2.eole.me site: it all lives in the sc2bo/ package.
 """
 
 from __future__ import annotations
@@ -70,30 +70,30 @@ def copy_to_clipboard(text: str) -> str | None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Extrait la build order d'un replay StarCraft II en Markdown.",
+        description="Extract a StarCraft II replay's build order as Markdown.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument("replays", nargs="*", help="fichiers .SC2Replay à analyser")
+    parser.add_argument("replays", nargs="*", help=".SC2Replay files to read")
     parser.add_argument("--last", nargs="?", type=int, const=1, metavar="N",
-                        help="analyser les N replays les plus récents (défaut : 1)")
+                        help="read the N most recent replays (default: 1)")
     parser.add_argument("--list", nargs="?", type=int, const=15, metavar="N",
-                        help="lister les N replays les plus récents sans les analyser")
-    parser.add_argument("--replay-dir", help="dossier de replays (sinon SC2_REPLAY_DIR, sinon détection)")
+                        help="list the N most recent replays without reading them")
+    parser.add_argument("--replay-dir", help="replay folder (else SC2_REPLAY_DIR, else auto-detected)")
     parser.add_argument("--player", action="append", default=[], metavar="NOM",
-                        help="nom (partiel) ou numéro du joueur à extraire ; répétable")
+                        help="partial name or number of the player to extract; repeatable")
     parser.add_argument("--all-players", action="store_true",
-                        help="inclure tous les camps, IA et forces neutres comprises")
-    parser.add_argument("--cutoff", metavar="MM:SS", help="ne garder que le début de la partie")
+                        help="include every side, AI and neutral forces too")
+    parser.add_argument("--cutoff", metavar="MM:SS", help="keep only the start of the game")
     parser.add_argument("--workers", choices=["summary", "all", "none"], default="summary",
-                        help="travailleurs : résumés (défaut), listés un par un, ou masqués")
+                        help="workers: summarised (default), listed one by one, or hidden")
     parser.add_argument("--format", choices=["table", "list", "raw"], default="table",
-                        help="rendu de la build order (défaut : table)")
+                        help="build order rendering (default: table)")
     parser.add_argument("--lang", choices=["fr", "en"], default="fr",
-                        help="langue du Markdown produit (défaut : fr)")
-    parser.add_argument("--no-prompt", action="store_true", help="ne pas ajouter la consigne d'analyse")
-    parser.add_argument("--output", metavar="FICHIER", help="écrire dans un fichier")
-    parser.add_argument("--clip", action="store_true", help="copier le résultat dans le presse-papiers")
+                        help="language of the generated Markdown (default: fr)")
+    parser.add_argument("--no-prompt", action="store_true", help="omit the coaching prompt")
+    parser.add_argument("--output", metavar="FILE", help="write to a file")
+    parser.add_argument("--clip", action="store_true", help="copy the result to the clipboard")
     args = parser.parse_args()
 
     dirs = find_replay_dirs(args.replay_dir)
@@ -139,7 +139,7 @@ def main() -> None:
         try:
             data, stats = read_replay(path)
             documents.append(render_replay(data, stats, options))
-        except Exception as exc:  # noqa: BLE001 — un replay illisible ne doit pas tuer le lot
+        except Exception as exc:  # noqa: BLE001 — one unreadable replay must not kill the batch
             failures.append(f"{os.path.basename(path)} : {type(exc).__name__}: {exc}")
 
     for line in failures:

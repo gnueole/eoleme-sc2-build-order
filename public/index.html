@@ -12,9 +12,9 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/styles.css">
 <script>
-/* Le thème est posé avant le premier rendu : sans cela, une préférence claire
-   verrait passer un éclair sombre le temps que le module se charge. Volontairement
-   inline et synchrone — c'est le seul endroit où cela se justifie. */
+/* The theme is set before first paint: without this, a light preference would
+   flash dark while the module loads. Deliberately inline and synchronous — this
+   is the one place that earns it. */
 (function () {
   try {
     var saved = localStorage.getItem("preferred-theme") || "system";
@@ -23,7 +23,7 @@
     document.documentElement.classList.add("theme-" + resolved);
     var meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute("content", resolved === "dark" ? "#080b11" : "#f8fafc");
-  } catch (e) { /* stockage indisponible : la media query prend le relais */ }
+  } catch (e) { /* storage unavailable: the media query takes over */ }
 })();
 </script>
 </head>
