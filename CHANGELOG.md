@@ -11,13 +11,17 @@ versioning follows [SemVer](https://semver.org/).
   extracted from the installed game's CASC storage, converted from 76px DX10
   `.dds` to 64px WebP — 3.3 MB in total, and a page only fetches the twenty or so
   it needs.
+- Race-scoped ability icons are shipped too, which is where the game files the
+  Protoss researches: without them Blink and Charge were the only gaps left on a
+  real 1v1. Widening further to every extracted icon was measured and reverted —
+  940 more files and 2.1 MB for no change in coverage, because the co-op names
+  still missing have no button icon in the game at all.
 - `sc2bo/icons.py` maps a step name to its icon. Plain normalisation only reaches
   units and buildings, so three rules close the gap on upgrades: the race prefix
   is stripped ("Terran Infantry Weapons Level 1" is filed without it), a trailing
   plural is retried singular ("Combat Shields" is filed as combatshield), and
   "weapons" is retried as "attacks" (Zerg upgrades use the second word). Add-ons
-  fall back to the generic tech lab and reactor icons. Measured on a real game:
-  49 steps out of 49 carry an icon.
+  fall back to the generic tech lab and reactor icons. Measured against production on a real 1v1: 94 steps out of 94 carry an icon.
 - Two tests assert that every indexed icon and every alias has a file behind it —
   an index entry with nothing on disk is a broken image on the page.
 - Blizzard attribution in the footer, in both languages, as the assets require.
