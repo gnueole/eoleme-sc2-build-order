@@ -82,6 +82,8 @@ function setLanguage(lang) {
   });
 
   if (lastResult) renderResult(lastResult);
+  /* The prompt on screen stays in the old language until we ask for it again. */
+  if (!$("prompt-preview").classList.contains("hidden")) loadPrompt();
 }
 
 function initialLocale() {
@@ -106,6 +108,45 @@ function cleanUrl() {
       history.replaceState(null, "", url.pathname + url.search + url.hash);
     }
   } catch (e) { /* history unavailable */ }
+}
+
+/* ---------- coaching prompt, served rather than restated ---------- */
+
+let promptLoadedFor = null;
+
+function loadPrompt() {
+  if (promptLoadedFor === locale) return;
+  fetch("/api/prompt?lang=" + encodeURIComponent(locale))
+    .then((r) => r.json())
+    .then((d) => { $("prompt-text").textContent = d.prompt; promptLoadedFor = locale; })
+    .catch(() => { $("prompt-text").textContent = "\u2014"; });
+}
+
+function togglePrompt(open) {
+  const box = $("prompt-preview");
+  const shown = open === undefined ? box.classList.contains("hidden") : open;
+  show(box, shown);
+  $("prompt-info").setAttribute("aria-expanded", String(shown));
+  if (shown) loadPrompt();
+}
+
+/* ---------- about dialog ---------- */
+
+let returnFocusTo = null;
+
+function openAbout() {
+  returnFocusTo = document.activeElement;
+  show($("about"), true);
+  $("about-close").focus();
+  fetch("/api/health")
+    .then((r) => r.json())
+    .then((d) => { $("about-version").textContent = d.version; })
+    .catch(() => { $("about-version").textContent = "\u2014"; });
+}
+
+function closeAbout() {
+  show($("about"), false);
+  if (returnFocusTo && returnFocusTo.focus) returnFocusTo.focus();
 }
 
 /* ---------- extraction ---------- */
@@ -154,12 +195,17 @@ function renderReport(report, L) {
   h.push('<p class="facts">' + facts
     .map((f) => "<span>" + esc(f[0]) + esc(L.colon) + " <b>" + esc(f[1]) + "</b></span>")
     .join("") + "</p>");
-  h.push('<ul class="roster">' + report.roster.map((p) =>
-    "<li>" + esc(p.name) +
-    (p.is_human ? "" : ' <span class="tag">' + esc(L.ai) + "</span>") +
-    ' <span class="race">' + esc(p.race) + "</span>" +
-    ' <span class="verdict ' + (p.won ? "win" : "loss") + '">' + esc(p.result) + "</span></li>"
-  ).join("") + "</ul>");
+  /* With two players the roster only repeats the two section headings below.
+     It earns its place in co-op, where the sections show the humans and the
+     roster shows everyone. */
+  if (report.roster.length > report.sections.length) {
+    h.push('<ul class="roster">' + report.roster.map((p) =>
+      "<li>" + esc(p.name) +
+      (p.is_human ? "" : ' <span class="tag">' + esc(L.ai) + "</span>") +
+      ' <span class="race">' + esc(p.race) + "</span>" +
+      ' <span class="verdict ' + (p.won ? "win" : "loss") + '">' + esc(p.result) + "</span></li>"
+    ).join("") + "</ul>");
+  }
   if (report.cutoff) {
     h.push('<p class="cut">' +
       esc(L.truncated.replace("{cut}", report.cutoff).replace("{full}", report.duration)) + "</p>");
@@ -252,17 +298,11 @@ function renderResult(res) {
   $("out").textContent = markdown;
   $("view").innerHTML = renderReport(res.report, res.labels);
 
-  const m = res.meta || {};
-  const chips = [];
-  if (m.map) chips.push([t("chip_map"), m.map]);
-  if (m.matchup) chips.push([t("chip_matchup"), m.matchup]);
-  if (m.duration) chips.push([t("chip_duration"), m.duration]);
-  if (m.players) chips.push([t("chip_players"), m.players]);
-  chips.push([t("chip_lines"), markdown.split("\n").length]);
-  $("meta").innerHTML = chips
-    .map((c) => '<span class="chip">' + esc(c[0]) + " <b>" + esc(c[1]) + "</b></span>")
-    .join("");
-  $("timing").textContent = t("read_in", { ms: res.ms });
+  /* The map, matchup and length are in the report heading right below; repeating
+     them as chips said the same thing three times. What is left is what the
+     heading cannot know: how long the parse took, and how much you are copying. */
+  $("timing").textContent = t("read_in", { ms: res.ms }) +
+    " · " + markdown.split("\n").length + " " + t("chip_lines").toLowerCase();
   applyView();
   show($("result"), true);
 }
@@ -352,6 +392,15 @@ function wire() {
 
   document.querySelectorAll("[data-view-choice]").forEach((btn) =>
     btn.addEventListener("click", () => { view = btn.dataset.viewChoice; applyView(); }));
+
+  $("prompt-info").addEventListener("click", () => togglePrompt());
+
+  $("about-open").addEventListener("click", openAbout);
+  $("about-close").addEventListener("click", closeAbout);
+  $("about").addEventListener("click", (e) => { if (e.target === $("about")) closeAbout(); });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !$("about").classList.contains("hidden")) closeAbout();
+  });
 
   document.querySelectorAll("[data-theme-choice]").forEach((btn) =>
     btn.addEventListener("click", () => applyTheme(btn.dataset.themeChoice)));

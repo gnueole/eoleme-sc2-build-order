@@ -49,13 +49,16 @@
    guarantees an explicit dark choice beats a light system. */
 @media (prefers-color-scheme: light) {
   :root:not(.theme-dark) {
-    --bg-color:        #f8fafc;
-    --bg-elevated:     #ffffff;
-    --card-bg:         rgba(255, 255, 255, 0.60);
-    --card-hover-bg:   rgba(255, 255, 255, 0.90);
-    --text-color:      #0f172a;
-    --text-muted:      #475569;
-    --text-faint:      #64748b;
+    /* The guidelines document #f8fafc here. On a full page of tables that reads
+       as glare, so the ground is pulled down and tinted toward the accent, and
+       the surfaces stop being pure white. A deliberate departure. */
+    --bg-color:        #e8edf3;
+    --bg-elevated:     #f7f9fb;
+    --card-bg:         rgba(252, 253, 255, 0.72);
+    --card-hover-bg:   rgba(255, 255, 255, 0.92);
+    --text-color:      #131c2b;
+    --text-muted:      #4a5568;
+    --text-faint:      #6b7688;
 
     --accent-color:    #0284c7;
     --accent-hover:    #0369a1;
@@ -72,13 +75,16 @@
 }
 
 :root.theme-light {
-    --bg-color:        #f8fafc;
-    --bg-elevated:     #ffffff;
-    --card-bg:         rgba(255, 255, 255, 0.60);
-    --card-hover-bg:   rgba(255, 255, 255, 0.90);
-    --text-color:      #0f172a;
-    --text-muted:      #475569;
-    --text-faint:      #64748b;
+    /* The guidelines document #f8fafc here. On a full page of tables that reads
+       as glare, so the ground is pulled down and tinted toward the accent, and
+       the surfaces stop being pure white. A deliberate departure. */
+    --bg-color:        #e8edf3;
+    --bg-elevated:     #f7f9fb;
+    --card-bg:         rgba(252, 253, 255, 0.72);
+    --card-hover-bg:   rgba(255, 255, 255, 0.92);
+    --text-color:      #131c2b;
+    --text-muted:      #4a5568;
+    --text-faint:      #6b7688;
 
     --accent-color:    #0284c7;
     --accent-hover:    #0369a1;
@@ -187,7 +193,22 @@ h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; te
 .seg button:hover { color: var(--text-color); background: var(--card-hover-bg); }
 .seg button[aria-pressed="true"] { background: var(--accent-color); color: var(--accent-ink); }
 .seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-glow); }
-.seg .glyph { font-size: 14px; }
+.seg .glyph { display: block; width: 15px; height: 15px; }
+.seg .glyph svg { display: block; width: 100%; height: 100%; }
+
+.iconbtn {
+  width: 34px; height: 34px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color .2s ease, border-color .2s ease, background-color .2s ease;
+}
+.iconbtn svg { width: 17px; height: 17px; }
+.iconbtn:hover { color: var(--accent-color); border-color: var(--accent-color); }
+.iconbtn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
 
 /* ---------- layout ---------- */
 
@@ -229,7 +250,7 @@ main {
   margin: 20px;
   border: 1.5px dashed var(--border-hover);
   border-radius: var(--radius);
-  padding: 44px 24px;
+  padding: 32px 24px;
   text-align: center;
   cursor: pointer;
   background: transparent;
@@ -290,7 +311,37 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 
 .check { display: flex; align-items: center; gap: 10px; align-self: end; padding-bottom: 10px; }
 .check input { accent-color: var(--accent-color); width: auto; }
-.check span { font-size: 13.5px; color: var(--text-muted); }
+.check span { font-size: 13.5px; color: var(--text-color); }
+.check-wrap { display: flex; flex-direction: column; gap: 4px; align-self: end; padding-bottom: 6px; }
+.check-wrap .check { align-self: start; padding-bottom: 0; }
+
+.linkbtn {
+  align-self: start;
+  font: inherit; font-size: 12px;
+  background: none; border: 0; padding: 0;
+  color: var(--accent-color);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-style: dotted;
+}
+.linkbtn:hover { color: var(--accent-hover); }
+.linkbtn:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 3px; border-radius: 2px; }
+
+/* The prompt itself, served by the API so the page never restates it. */
+.prompt-box {
+  margin: 0 20px 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+}
+.prompt-box p { margin: 0 0 10px; font-size: 12.5px; color: var(--text-muted); }
+.prompt-box pre {
+  margin: 0; max-height: 240px; overflow: auto;
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.65;
+  color: var(--text-color); white-space: pre-wrap;
+}
 
 /* ---------- buttons ---------- */
 
@@ -318,7 +369,16 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
-.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.btn:disabled {
+  /* At 45% the accent still reads as a live button on a dark ground; the button
+     has to look unavailable, not merely quiet. */
+  opacity: .5;
+  cursor: not-allowed;
+  box-shadow: none;
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
+  color: var(--text-faint);
+}
 
 .hint { font-size: 13px; color: var(--text-faint); margin-left: auto; text-align: right; }
 
@@ -363,7 +423,8 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 .verdict.loss { color: var(--error-color); background: var(--error-bg); }
 .cut { margin: 12px 0 0; font-size: 13px; color: var(--secondary-color); }
 
-.sect { padding-top: 22px; }
+.sect { padding-top: 26px; margin-top: 26px; border-top: 1px solid var(--border-color); }
+.sect:first-of-type { border-top: 0; margin-top: 0; padding-top: 20px; }
 .sect h4 { font-family: var(--font-title); font-size: 17px; font-weight: 600; margin: 0 0 12px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
 .sect h5 { font-family: var(--font-title); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); margin: 20px 0 8px; }
 
@@ -372,6 +433,7 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 .scroll { overflow-x: auto; max-height: 42vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; }
 
 .view table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.view tbody tr { height: 44px; }
 .view thead th {
   position: sticky; top: 0; z-index: 1;
   background: var(--bg-elevated);
@@ -379,7 +441,14 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
   color: var(--text-faint); font-weight: 500; text-align: left;
   padding: 9px 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;
 }
-.view td { padding: 7px 12px; border-bottom: 1px solid var(--border-color); }
+.view td { padding: 6px 12px; border-bottom: 1px solid var(--border-color); }
+
+/* Supply et Time tiennent en deux ou trois caractères. Sans cette contrainte le
+   navigateur leur donne un tiers de la table chacune et repousse l'action au
+   milieu, derrière un couloir vide. */
+.view table.bo th:nth-child(-n+2),
+.view table.bo td:nth-child(-n+2) { width: 1%; white-space: nowrap; }
+
 .view tbody tr:last-child td { border-bottom: 0; }
 .view tbody tr:hover td { background: var(--card-hover-bg); }
 .view th.num, .view td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
@@ -391,9 +460,17 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 
 /* Unit icons. Sized down from the game's 76px buttons; the slot keeps its width
    when we have no icon, so the action column never jitters. */
-.view td.act { display: flex; align-items: center; gap: 9px; }
-.view .ico { width: 24px; height: 24px; flex: none; border-radius: 4px; image-rendering: auto; }
-.view .ico-none { border: 1px dashed var(--border-color); border-radius: 4px; opacity: .5; }
+.view td.act { display: flex; align-items: center; gap: 11px; }
+.view .ico {
+  width: 32px; height: 32px; flex: none;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+}
+.view .ico-none {
+  border-style: dashed;
+  opacity: .45;
+}
 
 .line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
 .line .lbl {
@@ -401,7 +478,7 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
   color: var(--text-faint);
 }
 .chip.warn { color: var(--secondary-color); border-color: var(--secondary-color); }
-.muted { font-size: 12.5px; color: var(--text-faint); margin: 10px 0 0; font-style: italic; }
+.muted { font-size: 12.5px; color: var(--text-muted); margin: 12px 0 0; font-style: italic; }
 
 pre.out {
   margin: 0;
@@ -420,7 +497,10 @@ pre.out::-webkit-scrollbar-thumb { background: var(--border-hover); border-radiu
 
 .error { margin: 0; padding: 18px 20px; color: var(--error-color); background: var(--error-bg); font-size: 14px; }
 
-.hidden { display: none; }
+/* A utility class has to beat whatever display the component sets, whichever
+   comes later in the sheet. Without this, .overlay's display:flex won the cascade
+   and the dialog opened on page load. */
+.hidden { display: none !important; }
 .spinner {
   display: inline-block; width: 13px; height: 13px;
   border: 2px solid currentColor; border-right-color: transparent;
@@ -428,6 +508,55 @@ pre.out::-webkit-scrollbar-thumb { background: var(--border-hover); border-radiu
   vertical-align: -2px; margin-right: 8px;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- about dialog ---------- */
+
+.overlay {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  background: rgba(4, 8, 12, .62);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.dialog {
+  width: 100%; max-width: 520px;
+  max-height: 88vh; overflow: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-hover);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .45);
+}
+.dialog-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--border-color);
+}
+.dialog-head h2 { font-size: 16px; }
+.dialog-body { padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+.dialog-body p { margin: 0; font-size: 13.5px; color: var(--text-muted); }
+.dialog-brand { display: flex; align-items: center; gap: 12px; }
+.dialog-brand .chev { color: var(--accent-color); font-size: 17px; }
+.dialog-brand strong {
+  display: block; font-family: var(--font-title);
+  font-size: 19px; font-weight: 800; letter-spacing: -.01em; color: var(--text-color);
+}
+.dialog-brand .ver { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
+.dialog-brand .ver b { color: var(--secondary-color); }
+
+.facts-list { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 7px 16px; font-size: 13px; }
+.facts-list dt {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--text-faint); padding-top: 2px;
+}
+.facts-list dd { margin: 0; color: var(--text-color); overflow-wrap: anywhere; }
+.facts-list a { color: var(--accent-color); text-decoration: none; }
+.facts-list a:hover { text-decoration: underline; }
+
+.dialog-body .fine { font-size: 11.5px; }
+.dialog-body .salute {
+  font-family: var(--font-title); font-size: 14px; font-weight: 600;
+  color: var(--accent-color); margin-top: 2px;
+}
 
 footer {
   position: relative; z-index: 1;
@@ -439,7 +568,7 @@ footer {
 }
 footer a { color: var(--accent-color); text-decoration: none; }
 footer a:hover { text-decoration: underline; }
-.attribution { margin: 12px 0 0; font-size: 11.5px; opacity: .75; max-width: 78ch; }
+.attribution { margin: 14px 0 0; font-size: 12px; color: var(--text-muted); max-width: 78ch; }
 
 /* CSS_TOPOLOGY.md §7: the pair is 767.98px / 768px, never 768px on both sides. */
 @media (max-width: 767.98px) {

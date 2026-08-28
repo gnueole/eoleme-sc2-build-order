@@ -4,6 +4,44 @@ Every notable change to SC2 Build Order Forge.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
+## [1.5.0] — 2026-08-29
+
+### Added
+- **An about dialog**, reached from the masthead: version pulled live from the
+  API, author, MIT licence, source link, the eole.me galaxy, the Blizzard
+  notice, and En Taro Adun. Closes on Escape, on the backdrop, and returns focus
+  where it came from.
+- **The coaching prompt can be read before you use it.** A link under the
+  checkbox reveals the exact text, fetched from a new `GET /api/prompt`. Serving
+  it rather than restating it in the interface keeps one wording, not two that
+  drift.
+- `LICENSE`: MIT, matching jobby. It covers the source only — the unit icons
+  stay Blizzard's, and the file says so.
+
+### Changed
+- **The light theme was glare.** The guidelines document `#f8fafc`; over a full
+  page of tables that reads as white paper under a lamp. The ground is now
+  pulled down and tinted toward the accent (`#e8edf3`), surfaces are off-white
+  rather than pure white, and text contrast is lifted. A deliberate departure
+  from the documented value.
+- Build order tables: `Supply` and `Time` shrink to their content instead of
+  taking a third of the width each and pushing the action to the middle behind
+  an empty gutter.
+- Unit icons go from 24px to 32px, framed like the game's own buttons.
+- The theme toggle uses inline SVG. The moon was `☾`, which Outfit does not
+  carry: it fell back to a font that rendered it as a bare "C".
+- The report header no longer says the same thing three times — the chips
+  repeated the heading that repeated the facts line.
+- The roster only renders when it shows more than the sections below it, which
+  means co-op and not 1v1.
+
+### Fixed
+- The about dialog opened on page load. `.hidden` was declared before `.overlay`,
+  whose `display: flex` won the cascade at equal specificity. The utility is now
+  `!important`, with a test pinning it.
+- Placeholders that were cut mid-word in their fields.
+- The disabled extract button read as available on a dark ground.
+
 ## [1.4.0] — 2026-08-28
 
 ### Added

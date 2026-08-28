@@ -38,10 +38,15 @@
 
     <div class="controls">
       <div class="seg" role="group" data-i18n-aria="theme_system">
-        <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n-title="theme_light" data-i18n-aria="theme_light"><span class="glyph">&#9788;</span></button>
-        <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n-title="theme_dark" data-i18n-aria="theme_dark"><span class="glyph">&#9790;</span></button>
+        <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n-title="theme_light" data-i18n-aria="theme_light"><span class="glyph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M2 12h2M20 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg></span></button>
+        <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n-title="theme_dark" data-i18n-aria="theme_dark"><span class="glyph"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5z"/></svg></span></button>
         <button type="button" data-theme-choice="system" aria-pressed="true" data-i18n-title="theme_system" data-i18n-aria="theme_system">Auto</button>
       </div>
+      <button type="button" class="iconbtn" id="about-open" data-i18n-title="about_open" data-i18n-aria="about_open">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 7.6v.1"/>
+        </svg>
+      </button>
       <div class="seg" role="group" data-i18n-aria="lang_switch">
         <button type="button" data-locale-choice="fr" aria-pressed="true" lang="fr">FR</button>
         <button type="button" data-locale-choice="en" aria-pressed="false" lang="en">EN</button>
@@ -89,10 +94,19 @@
           <option value="none" data-i18n="opt_none"></option>
         </select>
       </div>
-      <label class="check" for="prompt">
-        <input type="checkbox" id="prompt" checked>
-        <span data-i18n="check_prompt"></span>
-      </label>
+      <div class="check-wrap">
+        <label class="check" for="prompt">
+          <input type="checkbox" id="prompt" checked>
+          <span data-i18n="check_prompt"></span>
+        </label>
+        <button type="button" class="linkbtn" id="prompt-info" aria-expanded="false"
+                aria-controls="prompt-preview" data-i18n="prompt_what"></button>
+      </div>
+    </div>
+
+    <div class="prompt-box hidden" id="prompt-preview">
+      <p data-i18n="prompt_intro"></p>
+      <pre id="prompt-text"></pre>
     </div>
 
     <div class="actions">
@@ -112,7 +126,6 @@
         </div>
       </div>
     </div>
-    <div class="meta" id="meta"></div>
     <div class="view" id="view"></div>
     <pre class="out hidden" id="out"></pre>
     <div class="actions">
@@ -134,6 +147,40 @@
   <a href="https://eole.me">eole.me</a>
   <p class="attribution" data-i18n="attribution"></p>
 </footer>
+
+<div class="overlay hidden" id="about" role="dialog" aria-modal="true" aria-labelledby="about-title">
+  <div class="dialog">
+    <div class="dialog-head">
+      <h2 id="about-title" data-i18n="about"></h2>
+      <button type="button" class="iconbtn" id="about-close" data-i18n-aria="about_close" data-i18n-title="about_close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="dialog-body">
+      <div class="dialog-brand">
+        <span class="chev">&#9654;</span>
+        <div>
+          <strong>Build Order Forge</strong>
+          <span class="ver"><span data-i18n="about_version"></span> <b id="about-version">—</b></span>
+        </div>
+      </div>
+      <p data-i18n="about_tagline"></p>
+      <dl class="facts-list">
+        <dt data-i18n="about_author"></dt>
+        <dd><a href="https://avarre.com" target="_blank" rel="noopener">Julien (Éole) Avarre</a></dd>
+        <dt data-i18n="about_license"></dt>
+        <dd data-i18n="about_license_value"></dd>
+        <dt data-i18n="about_source"></dt>
+        <dd><a href="https://github.com/gnueole/eoleme-sc2-build-order" target="_blank" rel="noopener">github.com/gnueole/eoleme-sc2-build-order</a></dd>
+      </dl>
+      <p data-i18n="about_galaxy"></p>
+      <p class="fine" data-i18n="about_blizzard"></p>
+      <p class="salute" data-i18n="about_salute"></p>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="js/app.js"></script>
 </body>

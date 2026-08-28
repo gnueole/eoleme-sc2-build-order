@@ -108,6 +108,7 @@ Markdown's words rather than holding a second copy.
 | Route | Role |
 |---|---|
 | `POST /api/extract` | Multipart: `replay`, plus `cutoff`, `players`, `format`, `workers`, `prompt`, `lang`. Returns `{markdown, report, labels, meta, ms}`. |
+| `GET /api/prompt` | The coaching prompt for a language, so the page can show it without holding a second copy. |
 | `GET /api/health` | Status, version, size cap, usage for the day. |
 | `GET /` | The interface. |
 

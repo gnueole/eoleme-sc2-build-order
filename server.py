@@ -180,6 +180,18 @@ def health() -> dict:
     }
 
 
+@app.get("/api/prompt")
+def prompt_text(lang: str = "fr") -> dict:
+    """
+    The coaching prompt the page offers to prepend. Served rather than restated
+    in the interface: a second copy in translations.js would drift from this one
+    the first time the wording changes.
+    """
+    if lang not in LANGUAGES:
+        lang = "fr"
+    return {"lang": lang, "prompt": build_coach_prompt(1, lang).rstrip()}
+
+
 @app.post("/api/extract")
 async def extract(
     replay: UploadFile = File(...),

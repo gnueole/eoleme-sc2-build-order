@@ -139,3 +139,37 @@ class TestIconAssets:
 
     def test_a_missing_icon_is_a_404_not_a_crash(self, client):
         assert client.get("/icons/btn-nope.webp").status_code == 404
+
+
+class TestPromptEndpoint:
+    def test_serves_the_real_prompt_not_a_summary(self, client):
+        # The page shows this text verbatim; a restated summary would drift.
+        body = client.get("/api/prompt?lang=fr").json()
+        assert body["lang"] == "fr"
+        assert "Analyse comme un coach" in body["prompt"]
+        assert "⚡" in body["prompt"]
+
+    def test_follows_the_requested_language(self, client):
+        assert "Coach me on it" in client.get("/api/prompt?lang=en").json()["prompt"]
+
+    def test_unknown_language_falls_back_to_french(self, client):
+        body = client.get("/api/prompt?lang=de").json()
+        assert body["lang"] == "fr"
+
+    def test_the_trailing_separator_is_trimmed(self, client):
+        # The prompt ends with a --- rule before the report; on its own it should
+        # not trail blank lines into the tooltip.
+        assert client.get("/api/prompt").json()["prompt"].endswith("---")
+
+
+class TestHiddenUtility:
+    def test_the_hidden_class_beats_component_display(self, client):
+        # .overlay sets display:flex later in the sheet; without !important the
+        # about dialog opens on page load.
+        css = client.get("/css/styles.css").text
+        assert ".hidden { display: none !important; }" in css
+
+    def test_the_dialog_starts_hidden_in_the_markup(self, client):
+        page = client.get("/").text
+        assert 'class="overlay hidden" id="about"' in page
+        assert 'class="prompt-box hidden" id="prompt-preview"' in page
