@@ -89,3 +89,41 @@ class TestStaticSite:
         response = client.get("/")
         assert response.status_code == 200
         assert "Build Order Forge" in response.text
+
+
+class TestLanguageNegotiation:
+    def test_errors_answer_in_english_when_asked(self, client):
+        response = upload(client, lang="en", format="csv")
+        assert response.status_code == 400
+        assert "Unknown value" in response.json()["detail"]
+
+    def test_errors_answer_in_french_by_default(self, client):
+        response = upload(client, format="csv")
+        assert "inconnue" in response.json()["detail"]
+
+    def test_unreadable_file_is_explained_in_english(self, client):
+        response = upload(client, lang="en", content=b"not a replay at all")
+        assert response.status_code == 422
+        assert "StarCraft II replay" in response.json()["detail"]
+
+    def test_unknown_language_falls_back_to_french_rather_than_failing(self, client):
+        response = upload(client, lang="de", format="csv")
+        assert response.status_code == 400
+        assert "inconnue" in response.json()["detail"]
+
+    def test_size_cap_message_follows_the_language(self, client, monkeypatch):
+        monkeypatch.setattr(server, "MAX_UPLOAD_BYTES", 1024)
+        assert "MB" in upload(client, lang="en", content=b"x" * 4096).json()["detail"]
+        assert "Mo" in upload(client, lang="fr", content=b"x" * 4096).json()["detail"]
+
+
+class TestStaticAssets:
+    def test_serves_the_stylesheet(self, client):
+        response = client.get("/css/styles.css")
+        assert response.status_code == 200
+        assert "--accent-color" in response.text
+
+    def test_serves_the_translations(self, client):
+        response = client.get("/js/translations.js")
+        assert response.status_code == 200
+        assert "TRANSLATIONS" in response.text

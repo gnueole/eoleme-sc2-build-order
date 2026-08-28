@@ -89,6 +89,8 @@ def main() -> None:
                         help="travailleurs : résumés (défaut), listés un par un, ou masqués")
     parser.add_argument("--format", choices=["table", "list", "raw"], default="table",
                         help="rendu de la build order (défaut : table)")
+    parser.add_argument("--lang", choices=["fr", "en"], default="fr",
+                        help="langue du Markdown produit (défaut : fr)")
     parser.add_argument("--no-prompt", action="store_true", help="ne pas ajouter la consigne d'analyse")
     parser.add_argument("--output", metavar="FICHIER", help="écrire dans un fichier")
     parser.add_argument("--clip", action="store_true", help="copier le résultat dans le presse-papiers")
@@ -125,6 +127,7 @@ def main() -> None:
         cutoff=args.cutoff,
         workers=args.workers,
         format=args.format,
+        lang=args.lang,
     )
 
     documents: list[str] = []
@@ -146,7 +149,7 @@ def main() -> None:
 
     body = "\n\n---\n\n".join(documents)
     if not args.no_prompt:
-        body = build_coach_prompt(len(documents)) + body
+        body = build_coach_prompt(len(documents), args.lang) + body
     text = body if body.endswith("\n") else body + "\n"
 
     lines = len(text.splitlines())

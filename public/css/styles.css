@@ -42,9 +42,13 @@
   --container: 1000px;
 }
 
-/* Mode business — thème clair (DESIGN_SYSTEM.md §4) */
+/* Mode business — thème clair (DESIGN_SYSTEM.md §4).
+   Trois états, comme trail-mapper : clair, sombre, système. Le script stampe
+   `theme-light` ou `theme-dark` sur <html> et sur <body> avant le premier rendu ;
+   la media query ne sert que de repli quand JavaScript est absent. Le `:not`
+   garantit qu'un choix explicite de sombre l'emporte sur un système en clair. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not(.theme-dark) {
     --bg-color:        #f8fafc;
     --bg-elevated:     #ffffff;
     --card-bg:         rgba(255, 255, 255, 0.60);
@@ -65,6 +69,28 @@
     --border-hover:    rgba(15, 23, 42, 0.20);
     --error-bg:        rgba(239, 68, 68, 0.10);
   }
+}
+
+:root.theme-light {
+    --bg-color:        #f8fafc;
+    --bg-elevated:     #ffffff;
+    --card-bg:         rgba(255, 255, 255, 0.60);
+    --card-hover-bg:   rgba(255, 255, 255, 0.90);
+    --text-color:      #0f172a;
+    --text-muted:      #475569;
+    --text-faint:      #64748b;
+
+    --accent-color:    #0284c7;
+    --accent-hover:    #0369a1;
+    --accent-glow:     rgba(2, 132, 199, 0.18);
+    --accent-ink:      #ffffff;
+
+    --secondary-color: #b45309;
+    --secondary-hover: #92400e;
+
+    --border-color:    rgba(15, 23, 42, 0.10);
+    --border-hover:    rgba(15, 23, 42, 0.20);
+    --error-bg:        rgba(239, 68, 68, 0.10);
 }
 
 * { box-sizing: border-box; }
@@ -131,6 +157,37 @@ h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; te
   filter: drop-shadow(0 0 10px var(--accent-glow));
 }
 .tagline { color: var(--text-muted); font-size: 14px; margin: 4px 0 0; max-width: 56ch; }
+
+/* ---------- contrôles thème et langue ---------- */
+
+.controls { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.seg button {
+  font-family: var(--font-title);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color .2s ease, color .2s ease;
+}
+.seg button + button { border-left: 1px solid var(--border-color); }
+.seg button:hover { color: var(--text-color); background: var(--card-hover-bg); }
+.seg button[aria-pressed="true"] { background: var(--accent-color); color: var(--accent-ink); }
+.seg button:focus-visible { outline: none; box-shadow: inset 0 0 0 2px var(--accent-glow); }
+.seg .glyph { font-size: 14px; }
 
 /* ---------- structure ---------- */
 

@@ -22,6 +22,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.concurrency import run_in_threadpool
 
 from sc2bo.extract import (
+    LANGUAGES,
     Options,
     ReplayError,
     build_coach_prompt,
@@ -48,6 +49,41 @@ FEEDBACK_THRESHOLD = int(os.environ.get("SC2BO_FEEDBACK_THRESHOLD", 50))
 # depuis la racine du dépôt, le conteneur depuis /app.
 _VERSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "VERSION")
 VERSION = open(_VERSION_FILE).read().strip() if os.path.exists(_VERSION_FILE) else "0.0.0"
+
+# Les messages d'erreur suivent la langue de l'interface : une page en anglais
+# qui répond en français est une demi-traduction.
+MESSAGES = {
+    "fr": {
+        "too_big": "Fichier trop lourd : la limite est de {mb} Mo. Un replay StarCraft II "
+                   "dépasse rarement 3 Mo — vérifiez le fichier envoyé.",
+        "empty": "Fichier vide.",
+        "bad_workers": "Valeur de « workers » inconnue.",
+        "bad_format": "Valeur de « format » inconnue.",
+        "bad_cutoff": "Le repère de temps doit s'écrire MM:SS, par exemple 8:00.",
+        "timeout": "Le replay a mis trop de temps à être lu. Réessayez, ou coupez "
+                   "l'extraction avec un repère de temps.",
+        "unreadable": "Ce fichier n'a pas pu être lu comme un replay StarCraft II. "
+                      "Vérifiez qu'il s'agit bien d'un .SC2Replay non tronqué.",
+    },
+    "en": {
+        "too_big": "File too large: the limit is {mb} MB. A StarCraft II replay rarely "
+                   "goes past 3 MB — check what you sent.",
+        "empty": "Empty file.",
+        "bad_workers": "Unknown value for \u201cworkers\u201d.",
+        "bad_format": "Unknown value for \u201cformat\u201d.",
+        "bad_cutoff": "The time marker must read MM:SS, for example 8:00.",
+        "timeout": "The replay took too long to read. Try again, or cut the extraction "
+                   "short with a time marker.",
+        "unreadable": "This file could not be read as a StarCraft II replay. Check that "
+                      "it really is an untruncated .SC2Replay.",
+    },
+}
+
+
+def say(lang: str, key: str, **fields) -> str:
+    catalogue = MESSAGES.get(lang, MESSAGES["fr"])
+    return catalogue[key].format(**fields)
+
 
 patch_spawningtool()
 
@@ -103,7 +139,7 @@ def emit(event: str, **fields) -> None:
         print(json.dumps({"event": "telemetry_failed", "reason": str(exc)}), flush=True)
 
 
-async def read_capped(upload: UploadFile) -> bytes:
+async def read_capped(upload: UploadFile, lang: str = "fr") -> bytes:
     chunks: list[bytes] = []
     total = 0
     while True:
@@ -114,12 +150,11 @@ async def read_capped(upload: UploadFile) -> bytes:
         if total > MAX_UPLOAD_BYTES:
             raise HTTPException(
                 status_code=413,
-                detail=f"Fichier trop lourd : la limite est de {MAX_UPLOAD_BYTES // (1024 * 1024)} Mo. "
-                       f"Un replay StarCraft II dépasse rarement 3 Mo — vérifiez le fichier envoyé.",
+                detail=say(lang, "too_big", mb=MAX_UPLOAD_BYTES // (1024 * 1024)),
             )
         chunks.append(chunk)
     if not total:
-        raise HTTPException(status_code=400, detail="Fichier vide.")
+        raise HTTPException(status_code=400, detail=say(lang, "empty"))
     return b"".join(chunks)
 
 
@@ -127,7 +162,7 @@ def extract_markdown(path: str, options: Options, with_prompt: bool) -> tuple[st
     data, stats = read_replay(path)
     markdown = render_replay(data, stats, options)
     if with_prompt:
-        markdown = build_coach_prompt(1) + markdown
+        markdown = build_coach_prompt(1, options.lang) + markdown
     return markdown, describe_replay(data)
 
 
@@ -149,11 +184,14 @@ async def extract(
     format: str = Form("table"),
     players: str = Form(""),
     prompt: str = Form("true"),
+    lang: str = Form("fr"),
 ):
+    if lang not in LANGUAGES:
+        lang = "fr"
     if workers not in {"summary", "all", "none"}:
-        raise HTTPException(status_code=400, detail="Valeur de « workers » inconnue.")
+        raise HTTPException(status_code=400, detail=say(lang, "bad_workers"))
     if format not in {"table", "list", "raw"}:
-        raise HTTPException(status_code=400, detail="Valeur de « format » inconnue.")
+        raise HTTPException(status_code=400, detail=say(lang, "bad_format"))
 
     options = Options(
         player=[p.strip() for p in players.split(",") if p.strip()],
@@ -161,6 +199,7 @@ async def extract(
         cutoff=cutoff.strip() or None,
         workers=workers,
         format=format,
+        lang=lang,
     )
     if options.cutoff:
         try:
@@ -168,12 +207,9 @@ async def extract(
 
             parse_time(options.cutoff)
         except (ValueError, TypeError):
-            raise HTTPException(
-                status_code=400,
-                detail="Le repère de temps doit s'écrire MM:SS, par exemple 8:00.",
-            ) from None
+            raise HTTPException(status_code=400, detail=say(lang, "bad_cutoff")) from None
 
-    payload = await read_capped(replay)
+    payload = await read_capped(replay, lang)
     started = time.monotonic()
 
     handle, path = tempfile.mkstemp(suffix=".SC2Replay")
@@ -187,21 +223,13 @@ async def extract(
             )
         except asyncio.TimeoutError:
             emit("extract_failed", reason="timeout", size=len(payload))
-            raise HTTPException(
-                status_code=504,
-                detail="Le replay a mis trop de temps à être lu. "
-                       "Réessayez, ou coupez l'extraction avec un repère de temps.",
-            ) from None
+            raise HTTPException(status_code=504, detail=say(lang, "timeout")) from None
         except ReplayError as exc:
             emit("extract_failed", reason="replay_error", size=len(payload))
             raise HTTPException(status_code=400, detail=str(exc)) from None
         except Exception as exc:  # noqa: BLE001 — un fichier illisible n'est pas une panne
             emit("extract_failed", reason=type(exc).__name__, size=len(payload))
-            raise HTTPException(
-                status_code=422,
-                detail="Ce fichier n'a pas pu être lu comme un replay StarCraft II. "
-                       "Vérifiez qu'il s'agit bien d'un .SC2Replay non tronqué.",
-            ) from None
+            raise HTTPException(status_code=422, detail=say(lang, "unreadable")) from None
     finally:
         try:
             os.unlink(path)
@@ -210,7 +238,8 @@ async def extract(
 
     elapsed_ms = int((time.monotonic() - started) * 1000)
     crossed = record_usage()
-    emit("extract_ok", ms=elapsed_ms, size=len(payload), lines=len(markdown.splitlines()), **meta)
+    emit("extract_ok", ms=elapsed_ms, size=len(payload), lang=lang,
+         lines=len(markdown.splitlines()), **meta)
     if crossed:
         emit("usage_threshold_crossed", threshold=FEEDBACK_THRESHOLD, count=_usage["count"])
 

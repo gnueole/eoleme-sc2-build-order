@@ -28,6 +28,7 @@ class Options:
     cutoff: str | None = None
     workers: str = "summary"   # summary | all | none
     format: str = "table"      # table | list | raw
+    lang: str = "fr"           # fr | en
 
 
 # --------------------------------------------------------------------------
@@ -99,28 +100,71 @@ def sample_stats(replay) -> dict[int, list[dict]]:
 SPLIT_CAMEL = re.compile(r"(?<=[a-z0-9])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])")
 
 RACE_LETTER = {"Terran": "T", "Protoss": "P", "Zerg": "Z"}
-RESULT_FR = {"Win": "Victoire", "Loss": "Défaite"}
+SUPPLY_CAP_MAX = 200
+
+# Les capacités portent des noms internes peu lisibles ; identiques dans les deux
+# langues, ce sont les termes que la communauté emploie tels quels.
 ABILITY_LABELS = {
     "CalldownMULE": "MULE",
     "ChronoBoostEnergyCost": "Chrono Boost",
-    "SpawnLarva": "Injection",
+    "SpawnLarva": "Inject",
     "SupplyDrop": "Supply Drop",
     "ScannerSweep": "Scan",
 }
-SUPPLY_CAP_MAX = 200
+
+LANGUAGES = ("fr", "en")
+
+LABELS = {
+    "fr": {
+        "colon": " :",
+        "map": "Carte", "duration": "Durée", "played": "Joué le", "patch": "Patch",
+        "kind": "Type", "ai": "IA", "win": "Victoire", "loss": "Défaite",
+        "truncated": "Tronqué à {cut} sur une partie de {full}.",
+        "col_supply": "Ravit.", "col_time": "Temps", "col_action": "Action",
+        "no_build": "Aucune construction enregistrée pour ce joueur.",
+        "supply_unit": "ravit.", "chrono": "chrono",
+        "workers_folded": "Les {n} travailleurs produits sont résumés ci-dessous "
+                          "plutôt que listés ligne à ligne.",
+        "economy": "Économie", "col_workers": "Travailleurs",
+        "col_minerals": "Minerais", "col_gas": "Gaz", "col_income": "Revenu min/gaz",
+        "supply_blocked": "Ravitaillement bloqué",
+        "macro": "Macro", "losses": "Pertes au combat",
+        "unknown_unit": "unité inconnue",
+    },
+    "en": {
+        "colon": ":",
+        "map": "Map", "duration": "Length", "played": "Played", "patch": "Patch",
+        "kind": "Kind", "ai": "AI", "win": "Win", "loss": "Loss",
+        "truncated": "Cut at {cut} of a {full} game.",
+        "col_supply": "Supply", "col_time": "Time", "col_action": "Action",
+        "no_build": "No construction recorded for this player.",
+        "supply_unit": "supply", "chrono": "chrono",
+        "workers_folded": "The {n} workers produced are summarised below "
+                          "rather than listed one by one.",
+        "economy": "Economy", "col_workers": "Workers",
+        "col_minerals": "Minerals", "col_gas": "Gas", "col_income": "Income min/gas",
+        "supply_blocked": "Supply blocked",
+        "macro": "Macro", "losses": "Combat losses",
+        "unknown_unit": "unknown unit",
+    },
+}
+
+
+def labels(lang: str) -> dict:
+    return LABELS.get(lang, LABELS["fr"])
 
 
 class ReplayError(ValueError):
     """Le fichier n'est pas un replay exploitable."""
 
 
-def pretty(name: str | None) -> str:
+def pretty(name: str | None, lang: str = "fr") -> str:
     """
     SupplyDepot -> Supply Depot ; SCV et « Combat Shields » restent intacts.
     Certaines unités Coop arrivent sans nom : on ne casse pas le rendu pour autant.
     """
     if not name:
-        return "unité inconnue"
+        return labels(lang)["unknown_unit"]
     return name if " " in name else SPLIT_CAMEL.sub(" ", name)
 
 
@@ -234,8 +278,8 @@ def supply_blocks(samples: list[dict], fps: float, end: float, minimum: float = 
     return blocks
 
 
-def summarise(entries: list[dict], top: int | None = None) -> str:
-    counts = Counter(pretty(e["name"]) for e in entries)
+def summarise(entries: list[dict], lang: str = "fr", top: int | None = None) -> str:
+    counts = Counter(pretty(e["name"], lang) for e in entries)
     return " · ".join(f"{n} ×{c}" if c > 1 else n for n, c in counts.most_common(top))
 
 
@@ -263,6 +307,8 @@ def describe_replay(data: dict) -> dict:
 
 
 def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) -> str:
+    L = labels(options.lang)
+    lang = options.lang
     fps = data["frames_per_second"]
     duration = data["frames"] / fps
     cutoff = parse_time(options.cutoff) if options.cutoff else None
@@ -284,23 +330,25 @@ def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) ->
         out.append(f"# {data['map']}")
     out.append("")
 
+    c = L["colon"]
     out.append(" · ".join([
-        f"**Carte :** {data['map']}",
-        f"**Durée :** {fmt_time(duration)}",
-        f"**Joué le :** {played:%Y-%m-%d %H:%M} UTC",
-        f"**Patch :** build {data['build']}",
-        f"**Type :** {data.get('category', '?')} {data.get('game_type', '')}".strip(),
+        f"**{L['map']}{c}** {data['map']}",
+        f"**{L['duration']}{c}** {fmt_time(duration)}",
+        f"**{L['played']}{c}** {played:%Y-%m-%d %H:%M} UTC",
+        f"**{L['patch']}{c}** build {data['build']}",
+        f"**{L['kind']}{c}** {data.get('category', '?')} {data.get('game_type', '')}".strip(),
     ]))
     out.append("")
 
+    verdicts = {"Win": L["win"], "Loss": L["loss"]}
     for _, p in everyone:
-        verdict = RESULT_FR.get(p["result"], p["result"] or "?")
-        kind = "" if p["is_human"] else " *(IA)*"
+        verdict = verdicts.get(p["result"], p["result"] or "?")
+        kind = "" if p["is_human"] else f" *({L['ai']})*"
         out.append(f"- **{p['name']}**{kind} — {p['race']} — {verdict}")
     out.append("")
 
     if cutoff and cutoff < duration:
-        out.append(f"> Tronqué à {fmt_time(cutoff)} sur une partie de {fmt_time(duration)}.")
+        out.append("> " + L["truncated"].format(cut=fmt_time(cutoff), full=fmt_time(duration)))
         out.append("")
 
     for pid, p in chosen:
@@ -309,42 +357,44 @@ def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) ->
 
         rows = build_order_rows(p, fps, cutoff, options.workers)
         if not rows:
-            out.append("_Aucune construction enregistrée pour ce joueur._")
+            out.append(f"_{L['no_build']}_")
             out.append("")
             continue
 
         if options.format == "table":
-            out.append("| Ravit. | Temps | Action |")
+            out.append(f"| {L['col_supply']} | {L['col_time']} | {L['col_action']} |")
             out.append("|--:|--:|---|")
             for e in rows:
                 mark = " ⚡" if e["is_chronoboosted"] else ""
-                out.append(f"| {e['supply']} | {e['time']} | {pretty(e['name'])}{mark} |")
+                out.append(f"| {e['supply']} | {e['time']} | {pretty(e['name'], lang)}{mark} |")
         elif options.format == "list":
             for i, e in enumerate(rows, 1):
                 mark = " ⚡" if e["is_chronoboosted"] else ""
-                out.append(f"{i}. `{e['supply']} ravit. · {e['time']}` {pretty(e['name'])}{mark}")
+                out.append(f"{i}. `{e['supply']} {L['supply_unit']} · {e['time']}` "
+                           f"{pretty(e['name'], lang)}{mark}")
         else:
             width = max(len(str(e["supply"])) for e in rows)
             out.append("```text")
             for e in rows:
-                mark = " (chrono)" if e["is_chronoboosted"] else ""
-                out.append(f"{str(e['supply']).rjust(width)}  {e['time']:>5}  {pretty(e['name'])}{mark}")
+                mark = f" ({L['chrono']})" if e["is_chronoboosted"] else ""
+                out.append(f"{str(e['supply']).rjust(width)}  {e['time']:>5}  "
+                           f"{pretty(e['name'], lang)}{mark}")
             out.append("```")
         out.append("")
 
         if options.workers != "all":
             produced = sum(1 for e in p["buildOrder"] if e["is_worker"])
             if produced:
-                out.append(f"_Les {produced} travailleurs produits sont résumés ci-dessous "
-                           f"plutôt que listés ligne à ligne._")
+                out.append("_" + L["workers_folded"].format(n=produced) + "_")
                 out.append("")
 
         samples = stats.get(pid, [])
         eco = economy_rows(samples, fps, horizon, step)
         if eco and options.workers != "none":
-            out.append("### Économie")
+            out.append(f"### {L['economy']}")
             out.append("")
-            out.append("| Temps | Ravit. | Travailleurs | Minerais | Gaz | Revenu min/gaz |")
+            out.append(f"| {L['col_time']} | {L['col_supply']} | {L['col_workers']} "
+                       f"| {L['col_minerals']} | {L['col_gas']} | {L['col_income']} |")
             out.append("|--:|--:|--:|--:|--:|--:|")
             for row in eco:
                 out.append(
@@ -356,27 +406,38 @@ def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) ->
 
         blocks = supply_blocks(samples, fps, horizon)
         if blocks:
-            out.append(f"**Ravitaillement bloqué —** {' · '.join(blocks)}")
+            out.append(f"**{L['supply_blocked']} —** {' · '.join(blocks)}")
             out.append("")
 
         abilities = [e for e in p["abilities"] if cutoff is None or seconds_of(e, fps) <= cutoff]
         if abilities:
-            counts = Counter(ABILITY_LABELS.get(e["name"], pretty(e["name"])) for e in abilities)
-            out.append("**Macro —** " + " · ".join(f"{n} ×{c}" for n, c in counts.most_common()))
+            counts = Counter(ABILITY_LABELS.get(e["name"], pretty(e["name"], lang)) for e in abilities)
+            out.append(f"**{L['macro']} —** " + " · ".join(f"{n} ×{c}" for n, c in counts.most_common()))
             out.append("")
 
         losses = [e for e in p["unitsLost"] if cutoff is None or seconds_of(e, fps) <= cutoff]
         # killer=None : mutation en bâtiment ou sabordage, pas une perte au combat.
         killed = [e for e in losses if e["killer"] is not None and e["killer"] != pid]
         if killed:
-            out.append(f"**Pertes au combat ({len(killed)}) —** " + summarise(killed, top=12))
+            out.append(f"**{L['losses']} ({len(killed)}) —** " + summarise(killed, lang, top=12))
             out.append("")
 
     return "\n".join(out).rstrip() + "\n"
 
 
-COACH_PROMPT = """\
-Voici {subject} StarCraft II, extraite du replay. Analyse comme un coach :
+COACH_OPENING = {
+    "fr": (
+        "Voici une de mes parties StarCraft II, extraite du replay. Analyse comme un coach :",
+        "Voici {n} de mes parties StarCraft II, extraites du replay. Analyse comme un coach :",
+    ),
+    "en": (
+        "Here is one of my StarCraft II games, pulled from the replay. Coach me on it:",
+        "Here are {n} of my StarCraft II games, pulled from the replay. Coach me on them:",
+    ),
+}
+
+COACH_BODY = {
+    "fr": """\
 
 1. Mes timings d'ouverture et mes ravitaillements tiennent-ils la route face à ce matchup ?
 2. Ma courbe de travailleurs décroche-t-elle, et à quelle minute exactement ?
@@ -389,9 +450,24 @@ production est à l'arrêt.
 
 ---
 
-"""
+""",
+    "en": """\
+
+1. Do my opening timings and supply counts hold up for this matchup?
+2. Does my worker curve fall behind, and at exactly which minute?
+3. What do my banked minerals and supply blocks say about my macro?
+4. What lost me the game, and which two fixes would pay off most?
+
+The ⚡ symbol marks production sped up with Chrono Boost. "Supply" gives supply
+used over the cap available; the two meet when production has stalled.
+
+---
+
+""",
+}
 
 
-def build_coach_prompt(count: int) -> str:
-    subject = "une de mes parties" if count == 1 else f"{count} de mes parties"
-    return COACH_PROMPT.format(subject=subject)
+def build_coach_prompt(count: int, lang: str = "fr") -> str:
+    one, many = COACH_OPENING.get(lang, COACH_OPENING["fr"])
+    opening = one if count == 1 else many.format(n=count)
+    return opening + "\n" + COACH_BODY.get(lang, COACH_BODY["fr"])

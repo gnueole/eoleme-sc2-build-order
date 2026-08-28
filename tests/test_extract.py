@@ -14,12 +14,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest
 
 from sc2bo.extract import (
+    LABELS,
+    LANGUAGES,
     Options,
     ReplayError,
     build_coach_prompt,
     economy_rows,
     fmt_time,
     parse_time,
+    labels,
     pretty,
     select_players,
     summarise,
@@ -163,3 +166,54 @@ class TestOptions:
         a, b = Options(), Options()
         a.player.append("Éole")
         assert b.player == []
+
+
+class TestLanguages:
+    def test_both_catalogues_hold_the_same_keys(self):
+        # Une clé oubliée d'un côté produit un libellé en dur dans l'autre langue.
+        assert set(LABELS["fr"]) == set(LABELS["en"])
+
+    def test_unknown_language_falls_back_to_french(self):
+        assert labels("de") is LABELS["fr"]
+        assert LANGUAGES == ("fr", "en")
+
+    def test_missing_unit_name_follows_the_language(self):
+        assert pretty(None, "fr") == "unité inconnue"
+        assert pretty(None, "en") == "unknown unit"
+
+    def test_camel_case_splitting_is_language_agnostic(self):
+        assert pretty("SupplyDepot", "en") == pretty("SupplyDepot", "fr") == "Supply Depot"
+
+    def test_french_keeps_the_space_before_colons(self):
+        # Règle typographique française ; l'anglais ne la suit pas.
+        assert LABELS["fr"]["colon"] == " :"
+        assert LABELS["en"]["colon"] == ":"
+
+
+class TestCoachPromptLanguages:
+    def test_english_singular_and_plural_are_grammatical(self):
+        one = build_coach_prompt(1, "en")
+        many = build_coach_prompt(3, "en")
+        assert one.startswith("Here is one of my StarCraft II games")
+        assert many.startswith("Here are 3 of my StarCraft II games")
+
+    def test_french_agrees_in_number(self):
+        assert "extraite du replay" in build_coach_prompt(1, "fr")
+        assert "extraites du replay" in build_coach_prompt(4, "fr")
+
+    def test_unknown_language_falls_back(self):
+        assert build_coach_prompt(1, "de") == build_coach_prompt(1, "fr")
+
+    def test_both_languages_explain_the_chrono_symbol(self):
+        for lang in LANGUAGES:
+            assert "⚡" in build_coach_prompt(1, lang)
+
+
+class TestOptionsLanguage:
+    def test_defaults_to_french(self):
+        assert Options().lang == "fr"
+
+    def test_summarise_follows_the_language(self):
+        entries = [{"name": None}, {"name": None}]
+        assert summarise(entries, "en") == "unknown unit ×2"
+        assert summarise(entries, "fr") == "unité inconnue ×2"

@@ -5,13 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Build Order Forge — sc2.eole.me</title>
 <meta name="description" content="Déposez un replay StarCraft II, récupérez sa build order en Markdown, prête à coller dans Claude.">
-<meta name="theme-color" content="#080b11" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#080b11">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap">
 <link rel="stylesheet" href="css/styles.css">
+<script>
+/* Le thème est posé avant le premier rendu : sans cela, une préférence claire
+   verrait passer un éclair sombre le temps que le module se charge. Volontairement
+   inline et synchrone — c'est le seul endroit où cela se justifie. */
+(function () {
+  try {
+    var saved = localStorage.getItem("preferred-theme") || "system";
+    var resolved = saved === "light" || saved === "dark" ? saved
+      : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.classList.add("theme-" + resolved);
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", resolved === "dark" ? "#080b11" : "#f8fafc");
+  } catch (e) { /* stockage indisponible : la media query prend le relais */ }
+})();
+</script>
 </head>
 <body>
 
@@ -19,7 +33,19 @@
   <div class="masthead-in">
     <div>
       <div class="wordmark"><span class="chev">&#9654;</span>Build Order Forge</div>
-      <p class="tagline">Déposez un replay StarCraft&nbsp;II, récupérez sa build order en Markdown, prête à coller dans Claude.</p>
+      <p class="tagline" data-i18n="tagline"></p>
+    </div>
+
+    <div class="controls">
+      <div class="seg" role="group" data-i18n-aria="theme_system">
+        <button type="button" data-theme-choice="light" aria-pressed="false" data-i18n-title="theme_light" data-i18n-aria="theme_light"><span class="glyph">&#9788;</span></button>
+        <button type="button" data-theme-choice="dark" aria-pressed="false" data-i18n-title="theme_dark" data-i18n-aria="theme_dark"><span class="glyph">&#9790;</span></button>
+        <button type="button" data-theme-choice="system" aria-pressed="true" data-i18n-title="theme_system" data-i18n-aria="theme_system">Auto</button>
+      </div>
+      <div class="seg" role="group" data-i18n-aria="lang_switch">
+        <button type="button" data-locale-choice="fr" aria-pressed="true" lang="fr">FR</button>
+        <button type="button" data-locale-choice="en" aria-pressed="false" lang="en">EN</button>
+      </div>
     </div>
   </div>
 </header>
@@ -27,197 +53,80 @@
 <main>
   <section class="panel">
     <div class="panel-head">
-      <h2>Le replay</h2>
-      <span class="eyebrow">rien n'est conservé sur le serveur</span>
+      <h2 data-i18n="panel_replay"></h2>
+      <span class="eyebrow" data-i18n="privacy"></span>
     </div>
 
-    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choisir un fichier de replay">
-      <div class="big">Glissez un fichier .SC2Replay ici</div>
-      <div class="small">ou cliquez pour le choisir — il se trouve dans Documents / StarCraft II / Accounts / … / Replays</div>
+    <div class="drop" id="drop" tabindex="0" role="button" data-i18n-aria="drop_aria">
+      <div class="big" data-i18n="drop_big"></div>
+      <div class="small" data-i18n="drop_small"></div>
       <div class="file" id="chosen"></div>
     </div>
     <input type="file" id="file" accept=".SC2Replay">
 
     <div class="opts">
       <div class="field">
-        <label for="cutoff">Arrêter à</label>
-        <input type="text" id="cutoff" placeholder="8:00 — vide = toute la partie" inputmode="numeric">
+        <label for="cutoff" data-i18n="label_cutoff"></label>
+        <input type="text" id="cutoff" data-i18n-placeholder="ph_cutoff" inputmode="numeric">
       </div>
       <div class="field">
-        <label for="players">Joueur</label>
-        <input type="text" id="players" placeholder="vide = les deux camps">
+        <label for="players" data-i18n="label_players"></label>
+        <input type="text" id="players" data-i18n-placeholder="ph_players">
       </div>
       <div class="field">
-        <label for="format">Format</label>
+        <label for="format" data-i18n="label_format"></label>
         <select id="format">
-          <option value="table">Tableau</option>
-          <option value="list">Liste</option>
-          <option value="raw">Brut</option>
+          <option value="table" data-i18n="opt_table"></option>
+          <option value="list" data-i18n="opt_list"></option>
+          <option value="raw" data-i18n="opt_raw"></option>
         </select>
       </div>
       <div class="field">
-        <label for="workers">Travailleurs</label>
+        <label for="workers" data-i18n="label_workers"></label>
         <select id="workers">
-          <option value="summary">Résumés</option>
-          <option value="all">Listés un par un</option>
-          <option value="none">Masqués</option>
+          <option value="summary" data-i18n="opt_summary"></option>
+          <option value="all" data-i18n="opt_all"></option>
+          <option value="none" data-i18n="opt_none"></option>
         </select>
       </div>
       <label class="check" for="prompt">
         <input type="checkbox" id="prompt" checked>
-        <span>Ajouter la consigne de coaching</span>
+        <span data-i18n="check_prompt"></span>
       </label>
     </div>
 
     <div class="actions">
-      <button class="btn primary" id="go" disabled>Extraire la build order</button>
+      <button class="btn primary" id="go" disabled data-i18n="btn_extract"></button>
       <span class="hint" id="hint"></span>
     </div>
   </section>
 
   <section class="panel hidden" id="result">
     <div class="panel-head">
-      <h2>Markdown</h2>
+      <h2 data-i18n="panel_markdown"></h2>
       <span class="eyebrow" id="timing"></span>
     </div>
     <div class="meta" id="meta"></div>
     <pre class="out" id="out"></pre>
     <div class="actions">
-      <button class="btn primary" id="copy">Copier le Markdown</button>
-      <button class="btn" id="download">Télécharger le .md</button>
+      <button class="btn primary" id="copy" data-i18n="btn_copy"></button>
+      <button class="btn" id="download" data-i18n="btn_download"></button>
       <span class="hint" id="copied"></span>
     </div>
   </section>
 
   <section class="panel hidden" id="failure">
-    <div class="panel-head"><h2>Échec</h2></div>
+    <div class="panel-head"><h2 data-i18n="panel_failure"></h2></div>
     <p class="error" id="errmsg"></p>
   </section>
 </main>
 
 <footer>
-  Le replay est lu en mémoire puis effacé : rien n'est stocké, rien n'est partagé.
-  Les chiffres d'économie viennent des relevés que le jeu écrit lui-même dans le fichier.
-  <a href="https://github.com/gnueole/eoleme-sc2-build-order">Code source</a> ·
+  <span data-i18n="footer"></span>
+  <a href="https://github.com/gnueole/eoleme-sc2-build-order" data-i18n="footer_source"></a> ·
   <a href="https://eole.me">eole.me</a>
 </footer>
 
-<script>
-(function () {
-  "use strict";
-
-  var $ = function (id) { return document.getElementById(id); };
-  var drop = $("drop"), fileInput = $("file"), chosen = $("chosen");
-  var go = $("go"), hint = $("hint");
-  var result = $("result"), failure = $("failure"), out = $("out");
-  var picked = null, markdown = "", basename = "build-order";
-
-  function setFile(f) {
-    picked = f;
-    chosen.textContent = f ? f.name + "  (" + Math.round(f.size / 1024) + " Ko)" : "";
-    go.disabled = !f;
-    if (f) basename = f.name.replace(/\.SC2Replay$/i, "") || "build-order";
-  }
-
-  drop.addEventListener("click", function () { fileInput.click(); });
-  drop.addEventListener("keydown", function (e) {
-    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
-  });
-  fileInput.addEventListener("change", function () { setFile(fileInput.files[0] || null); });
-
-  ["dragenter", "dragover"].forEach(function (name) {
-    drop.addEventListener(name, function (e) { e.preventDefault(); drop.classList.add("over"); });
-  });
-  ["dragleave", "drop"].forEach(function (name) {
-    drop.addEventListener(name, function (e) { e.preventDefault(); drop.classList.remove("over"); });
-  });
-  drop.addEventListener("drop", function (e) {
-    var f = e.dataTransfer && e.dataTransfer.files[0];
-    if (f) setFile(f);
-  });
-
-  function show(el, on) { el.classList.toggle("hidden", !on); }
-
-  function fail(message) {
-    show(result, false);
-    show(failure, true);
-    $("errmsg").textContent = message;
-  }
-
-  go.addEventListener("click", function () {
-    if (!picked) return;
-    var body = new FormData();
-    body.append("replay", picked);
-    body.append("cutoff", $("cutoff").value);
-    body.append("players", $("players").value);
-    body.append("format", $("format").value);
-    body.append("workers", $("workers").value);
-    body.append("prompt", $("prompt").checked ? "true" : "false");
-
-    go.disabled = true;
-    hint.innerHTML = '<span class="spinner"></span>Lecture du replay…';
-    show(failure, false);
-
-    fetch("/api/extract", { method: "POST", body: body })
-      .then(function (r) {
-        return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
-      })
-      .then(function (res) {
-        go.disabled = false;
-        hint.textContent = "";
-        if (!res.ok) {
-          fail(res.data && res.data.detail ? res.data.detail : "Erreur " + res.status + ".");
-          return;
-        }
-        markdown = res.data.markdown;
-        out.textContent = markdown;
-        var m = res.data.meta || {};
-        var chips = [];
-        if (m.map) chips.push(["Carte", m.map]);
-        if (m.matchup) chips.push(["Matchup", m.matchup]);
-        if (m.duration) chips.push(["Durée", m.duration]);
-        if (m.players) chips.push(["Joueurs", m.players]);
-        chips.push(["Lignes", markdown.split("\n").length]);
-        $("meta").innerHTML = chips.map(function (c) {
-          return '<span class="chip">' + c[0] + " <b>" + String(c[1]).replace(/</g, "&lt;") + "</b></span>";
-        }).join("");
-        $("timing").textContent = "lu en " + res.data.ms + " ms";
-        show(result, true);
-        result.scrollIntoView({ behavior: "smooth", block: "start" });
-      })
-      .catch(function () {
-        go.disabled = false;
-        hint.textContent = "";
-        fail("Le serveur n'a pas répondu. Vérifiez votre connexion et réessayez.");
-      });
-  });
-
-  $("copy").addEventListener("click", function () {
-    var done = function () {
-      $("copied").textContent = "Copié — collez-le dans Claude.";
-      setTimeout(function () { $("copied").textContent = ""; }, 2600);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(markdown).then(done, function () {
-        $("copied").textContent = "Copie bloquée — sélectionnez le texte ci-dessus.";
-      });
-    } else {
-      $("copied").textContent = "Copie bloquée — sélectionnez le texte ci-dessus.";
-    }
-  });
-
-  $("download").addEventListener("click", function () {
-    var blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = basename + ".md";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-  });
-})();
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>

@@ -4,6 +4,27 @@ Toutes les évolutions notables de SC2 Build Order Forge.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le versionnage [SemVer](https://semver.org/lang/fr/).
 
+## [1.2.0] — 2026-08-28
+
+### Ajouté
+- **Thème clair / sombre / système**, à trois états comme `trail-mapper` : clé
+  `preferred-theme` (défaut `system`), classes `theme-light` / `theme-dark` de la
+  charte, et ré-application quand la préférence du système change en cours de
+  route. Un script inline pose le thème *avant* le premier rendu : sans lui, une
+  préférence claire voyait passer un éclair sombre.
+- **Interface bilingue FR / EN.** Clé `preferred-locale` comme `trail-mapper`, et
+  paramètre `?hl=fr` / `?hl=en` comme le blog, qui se nettoie de la barre
+  d'adresse après lecture. À la première visite, la langue du navigateur décide.
+- La traduction couvre aussi **le Markdown produit et les messages d'erreur du
+  serveur** : une interface anglaise qui rend des tableaux français et des
+  erreurs françaises serait une demi-traduction. `cli.py` gagne `--lang`.
+- L'anglais suit sa propre typographie : `**Map:**` sans espace avant les
+  deux-points, là où le français écrit `**Carte :**`.
+
+### Modifié
+- Le script de la page passe dans `public/js/`, en deux modules — `translations.js`
+  et `app.js` — sur le modèle de `trail-mapper`.
+
 ## [1.1.0] — 2026-08-28
 
 ### Modifié

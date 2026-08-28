@@ -1,6 +1,7 @@
 """Extraction de build orders StarCraft II depuis les fichiers .SC2Replay."""
 
 from .extract import (
+    LANGUAGES,
     Options,
     build_coach_prompt,
     describe_replay,
@@ -10,6 +11,7 @@ from .extract import (
 )
 
 __all__ = [
+    "LANGUAGES",
     "Options",
     "build_coach_prompt",
     "describe_replay",

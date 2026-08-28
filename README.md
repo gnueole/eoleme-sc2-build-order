@@ -45,6 +45,7 @@ OneDrive sous WSL. `SC2_REPLAY_DIR` ou `--replay-dir` le forcent.
 | `--all-players` | Inclure l'IA et les forces neutres (Coop). |
 | `--workers` | `summary` (défaut), `all` pour lister chaque travailleur, `none`. |
 | `--format` | `table` (défaut), `list`, ou `raw` aligné en colonnes. |
+| `--lang` | `fr` (défaut) ou `en` — langue du Markdown produit. |
 | `--no-prompt` | Sans la consigne de coaching en tête. |
 
 ---
@@ -53,7 +54,7 @@ OneDrive sous WSL. `SC2_REPLAY_DIR` ou `--replay-dir` le forcent.
 
 ```bash
 make venv     # environnement Python
-make test     # 33 tests
+make test     # 51 tests
 make up       # conteneur sur http://localhost:3050
 make logs
 make down
@@ -86,6 +87,7 @@ cli.py               Interface ligne de commande (script uv autonome)
 server.py            Service HTTP FastAPI
 public/index.html    Interface web, sans build ni dépendance JS
 public/css/styles.css Charte graphique eole.me
+public/js/            translations.js (FR/EN) et app.js (thème, langue, envoi)
 docker/              Dockerfile + compose local et production
 ```
 
