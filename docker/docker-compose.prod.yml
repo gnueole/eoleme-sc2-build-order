@@ -1,0 +1,38 @@
+name: eole-me-sc2-build-order
+
+services:
+  sc2-build-order:
+    image: ghcr.io/gnueole/eoleme-sc2-build-order:latest
+    container_name: eole-me-sc2-build-order-prod-container
+    environment:
+      - TELEMETRY_WEBHOOK_URL=${TELEMETRY_WEBHOOK_URL:-http://vector:8080}
+      - SC2BO_FEEDBACK_THRESHOLD=${SC2BO_FEEDBACK_THRESHOLD:-50}
+      - SC2BO_MAX_UPLOAD_BYTES=${SC2BO_MAX_UPLOAD_BYTES:-12582912}
+      - DOPPLER_ENVIRONMENT=${DOPPLER_ENVIRONMENT:-prod}
+    restart: unless-stopped
+    networks:
+      - eole_shared_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.eoleme-sc2-build-order.rule=Host(`sc2.eole.me`)"
+      - "traefik.http.routers.eoleme-sc2-build-order.entrypoints=websecure"
+      - "traefik.http.routers.eoleme-sc2-build-order.tls=true"
+      - "traefik.http.routers.eoleme-sc2-build-order.tls.certresolver=letsencrypt"
+      - "traefik.http.services.eoleme-sc2-build-order.loadbalancer.server.port=3000"
+      # Traefik refuse un corps plus gros que le plafond applicatif : l'upload est
+      # coupé au proxy avant d'atteindre le conteneur.
+      - "traefik.http.middlewares.sc2bo-limit.buffering.maxRequestBodyBytes=12582912"
+      - "traefik.http.middlewares.sc2bo-limit.buffering.memRequestBodyBytes=2097152"
+      - "traefik.http.routers.eoleme-sc2-build-order.middlewares=sc2bo-limit"
+      - "vector.dev/collect=true"
+      - "vector.dev/dataset=eole-me-sc2-build-order"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.00'
+          memory: 512M
+
+networks:
+  eole_shared_network:
+    name: ${DOCKER_NETWORK_NAME}
+    external: ${DOCKER_NETWORK_EXTERNAL}

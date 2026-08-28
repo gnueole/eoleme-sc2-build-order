@@ -1,0 +1,23 @@
+name: eole-me-sc2-build-order
+
+services:
+  sc2-build-order:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: eole-me-sc2-build-order-dev-container
+    ports:
+      - "3050:3000"
+    environment:
+      - TELEMETRY_WEBHOOK_URL=${TELEMETRY_WEBHOOK_URL:-}
+      - SC2BO_FEEDBACK_THRESHOLD=${SC2BO_FEEDBACK_THRESHOLD:-50}
+      - SC2BO_MAX_UPLOAD_BYTES=${SC2BO_MAX_UPLOAD_BYTES:-12582912}
+      - DOPPLER_ENVIRONMENT=${DOPPLER_ENVIRONMENT:-dev}
+    restart: unless-stopped
+    networks:
+      - eole_shared_network
+
+networks:
+  eole_shared_network:
+    name: ${DOCKER_NETWORK_NAME:-sc2-build-order-standalone}
+    external: ${DOCKER_NETWORK_EXTERNAL:-false}

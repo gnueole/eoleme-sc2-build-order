@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Order Forge — sc2.eole.me</title>
+<meta name="description" content="Déposez un replay StarCraft II, récupérez sa build order en Markdown, prête à coller dans Claude.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@400;500;600&display=swap">
+<style>
+:root {
+  --ground:#E8EDEE; --surface:#F8FAFB; --surface-2:#DDE5E7;
+  --ink:#141D21; --muted:#56656A; --faint:#83959A;
+  --line:#C5D0D3; --line-soft:#D7DFE1;
+  --accent:#0E6E7A; --accent-ink:#FFFFFF; --accent-soft:#D3E8EA;
+  --brass:#96660F; --danger:#A33232; --danger-bg:#F2DDDC;
+  --shadow:0 1px 2px rgba(20,29,33,.06), 0 8px 24px rgba(20,29,33,.06);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ground:#0C1316; --surface:#141E22; --surface-2:#1C282C;
+    --ink:#E2EAEC; --muted:#93A5AA; --faint:#6B7C81;
+    --line:#243237; --line-soft:#1D292D;
+    --accent:#3FB6C4; --accent-ink:#061214; --accent-soft:#10333A;
+    --brass:#D9A340; --danger:#E38A85; --danger-bg:#35191A;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.55;
+  -webkit-font-smoothing:antialiased}
+h1,h2{font-family:Oswald,"IBM Plex Sans",sans-serif;font-weight:500;letter-spacing:.01em;margin:0;text-wrap:balance}
+.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+
+.masthead{border-bottom:1px solid var(--line);background:var(--surface)}
+.masthead-in{max-width:1080px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.wordmark{font-family:Oswald,sans-serif;font-size:25px;font-weight:600;letter-spacing:.015em;text-transform:uppercase;display:flex;align-items:baseline;gap:9px}
+.wordmark .chev{color:var(--accent);font-size:19px}
+.tagline{color:var(--muted);font-size:13.5px;margin:2px 0 0;max-width:52ch}
+
+main{max-width:1080px;margin:0 auto;padding:26px 24px 80px;display:flex;flex-direction:column;gap:22px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow)}
+.panel-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
+.panel-head h2{font-size:15px;text-transform:uppercase;letter-spacing:.07em}
+
+/* zone de dépôt */
+.drop{margin:18px;border:1.5px dashed var(--line);border-radius:4px;padding:38px 22px;text-align:center;
+  cursor:pointer;transition:border-color .15s,background-color .15s;background:transparent}
+.drop:hover,.drop:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:none}
+.drop.over{border-color:var(--accent);border-style:solid;background:var(--accent-soft)}
+.drop .big{font-family:Oswald,sans-serif;font-size:19px;letter-spacing:.02em}
+.drop .small{color:var(--muted);font-size:13px;margin-top:5px}
+.drop .file{margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--accent)}
+input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* options */
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px 18px;padding:0 18px 18px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+input[type=text],select{font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);
+  padding:5px 2px;width:100%;border-radius:0;transition:border-color .12s,background-color .12s}
+input[type=text]:focus,select:focus{outline:none;border-bottom-color:var(--accent);background:var(--accent-soft)}
+select{appearance:none;cursor:pointer;padding-right:18px;
+  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
+  background-position:right 7px center,right 3px center;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
+select option{background:var(--surface);color:var(--ink)}
+.check{display:flex;align-items:center;gap:8px;align-self:end;padding-bottom:6px}
+.check input{accent-color:var(--accent);width:auto}
+.check span{font-size:13px;color:var(--muted)}
+
+.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--line-soft)}
+.btn{font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:3px;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;
+  transition:background-color .12s,border-color .12s,color .12s}
+.btn:hover:not(:disabled){border-color:var(--muted);background:var(--surface-2)}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.hint{font-size:12.5px;color:var(--faint);margin-left:auto;text-align:right}
+
+/* résultat */
+.meta{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:var(--surface-2)}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;padding:4px 9px;border-radius:3px;
+  background:var(--surface);border:1px solid var(--line);color:var(--muted)}
+.chip b{color:var(--ink);font-weight:600}
+pre.out{margin:0;padding:16px 18px;max-height:56vh;overflow:auto;white-space:pre;
+  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.65;color:var(--muted);
+  border-bottom:1px solid var(--line-soft)}
+.error{margin:0;padding:16px 18px;color:var(--danger);background:var(--danger-bg);font-size:13.5px}
+.hidden{display:none}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;
+  border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+footer{max-width:1080px;margin:0 auto;padding:0 24px 40px;color:var(--faint);font-size:12.5px}
+footer a{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="masthead-in">
+    <div>
+      <div class="wordmark"><span class="chev">&#9654;</span>Build Order Forge</div>
+      <p class="tagline">Déposez un replay StarCraft&nbsp;II, récupérez sa build order en Markdown, prête à coller dans Claude.</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Le replay</h2>
+      <span class="eyebrow">rien n'est conservé sur le serveur</span>
+    </div>
+
+    <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choisir un fichier de replay">
+      <div class="big">Glissez un fichier .SC2Replay ici</div>
+      <div class="small">ou cliquez pour le choisir — il se trouve dans Documents / StarCraft II / Accounts / … / Replays</div>
+      <div class="file" id="chosen"></div>
+    </div>
+    <input type="file" id="file" accept=".SC2Replay">
+
+    <div class="opts">
+      <div class="field">
+        <label for="cutoff">Arrêter à</label>
+        <input type="text" id="cutoff" placeholder="8:00 — vide = toute la partie" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="players">Joueur</label>
+        <input type="text" id="players" placeholder="vide = les deux camps">
+      </div>
+      <div class="field">
+        <label for="format">Format</label>
+        <select id="format">
+          <option value="table">Tableau</option>
+          <option value="list">Liste</option>
+          <option value="raw">Brut</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="workers">Travailleurs</label>
+        <select id="workers">
+          <option value="summary">Résumés</option>
+          <option value="all">Listés un par un</option>
+          <option value="none">Masqués</option>
+        </select>
+      </div>
+      <label class="check" for="prompt">
+        <input type="checkbox" id="prompt" checked>
+        <span>Ajouter la consigne de coaching</span>
+      </label>
+    </div>
+
+    <div class="actions">
+      <button class="btn primary" id="go" disabled>Extraire la build order</button>
+      <span class="hint" id="hint"></span>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="result">
+    <div class="panel-head">
+      <h2>Markdown</h2>
+      <span class="eyebrow" id="timing"></span>
+    </div>
+    <div class="meta" id="meta"></div>
+    <pre class="out" id="out"></pre>
+    <div class="actions">
+      <button class="btn primary" id="copy">Copier le Markdown</button>
+      <button class="btn" id="download">Télécharger le .md</button>
+      <span class="hint" id="copied"></span>
+    </div>
+  </section>
+
+  <section class="panel hidden" id="failure">
+    <div class="panel-head"><h2>Échec</h2></div>
+    <p class="error" id="errmsg"></p>
+  </section>
+</main>
+
+<footer>
+  Le replay est lu en mémoire puis effacé : rien n'est stocké, rien n'est partagé.
+  Les chiffres d'économie viennent des relevés que le jeu écrit lui-même dans le fichier.
+  <a href="https://github.com/gnueole/eoleme-sc2-build-order">Code source</a>.
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var drop = $("drop"), fileInput = $("file"), chosen = $("chosen");
+  var go = $("go"), hint = $("hint");
+  var result = $("result"), failure = $("failure"), out = $("out");
+  var picked = null, markdown = "", basename = "build-order";
+
+  function setFile(f) {
+    picked = f;
+    chosen.textContent = f ? f.name + "  (" + Math.round(f.size / 1024) + " Ko)" : "";
+    go.disabled = !f;
+    if (f) basename = f.name.replace(/\.SC2Replay$/i, "") || "build-order";
+  }
+
+  drop.addEventListener("click", function () { fileInput.click(); });
+  drop.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); }
+  });
+  fileInput.addEventListener("change", function () { setFile(fileInput.files[0] || null); });
+
+  ["dragenter", "dragover"].forEach(function (name) {
+    drop.addEventListener(name, function (e) { e.preventDefault(); drop.classList.add("over"); });
+  });
+  ["dragleave", "drop"].forEach(function (name) {
+    drop.addEventListener(name, function (e) { e.preventDefault(); drop.classList.remove("over"); });
+  });
+  drop.addEventListener("drop", function (e) {
+    var f = e.dataTransfer && e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+
+  function show(el, on) { el.classList.toggle("hidden", !on); }
+
+  function fail(message) {
+    show(result, false);
+    show(failure, true);
+    $("errmsg").textContent = message;
+  }
+
+  go.addEventListener("click", function () {
+    if (!picked) return;
+    var body = new FormData();
+    body.append("replay", picked);
+    body.append("cutoff", $("cutoff").value);
+    body.append("players", $("players").value);
+    body.append("format", $("format").value);
+    body.append("workers", $("workers").value);
+    body.append("prompt", $("prompt").checked ? "true" : "false");
+
+    go.disabled = true;
+    hint.innerHTML = '<span class="spinner"></span>Lecture du replay…';
+    show(failure, false);
+
+    fetch("/api/extract", { method: "POST", body: body })
+      .then(function (r) {
+        return r.json().then(function (data) { return { ok: r.ok, status: r.status, data: data }; });
+      })
+      .then(function (res) {
+        go.disabled = false;
+        hint.textContent = "";
+        if (!res.ok) {
+          fail(res.data && res.data.detail ? res.data.detail : "Erreur " + res.status + ".");
+          return;
+        }
+        markdown = res.data.markdown;
+        out.textContent = markdown;
+        var m = res.data.meta || {};
+        var chips = [];
+        if (m.map) chips.push(["Carte", m.map]);
+        if (m.matchup) chips.push(["Matchup", m.matchup]);
+        if (m.duration) chips.push(["Durée", m.duration]);
+        if (m.players) chips.push(["Joueurs", m.players]);
+        chips.push(["Lignes", markdown.split("\n").length]);
+        $("meta").innerHTML = chips.map(function (c) {
+          return '<span class="chip">' + c[0] + " <b>" + String(c[1]).replace(/</g, "&lt;") + "</b></span>";
+        }).join("");
+        $("timing").textContent = "lu en " + res.data.ms + " ms";
+        show(result, true);
+        result.scrollIntoView({ behavior: "smooth", block: "start" });
+      })
+      .catch(function () {
+        go.disabled = false;
+        hint.textContent = "";
+        fail("Le serveur n'a pas répondu. Vérifiez votre connexion et réessayez.");
+      });
+  });
+
+  $("copy").addEventListener("click", function () {
+    var done = function () {
+      $("copied").textContent = "Copié — collez-le dans Claude.";
+      setTimeout(function () { $("copied").textContent = ""; }, 2600);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(markdown).then(done, function () {
+        $("copied").textContent = "Copie bloquée — sélectionnez le texte ci-dessus.";
+      });
+    } else {
+      $("copied").textContent = "Copie bloquée — sélectionnez le texte ci-dessus.";
+    }
+  });
+
+  $("download").addEventListener("click", function () {
+    var blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = basename + ".md";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  });
+})();
+</script>
+</body>
+</html>
