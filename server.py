@@ -26,10 +26,12 @@ from sc2bo.extract import (
     Options,
     ReplayError,
     build_coach_prompt,
+    build_report,
     describe_replay,
+    labels,
     patch_spawningtool,
     read_replay,
-    render_replay,
+    render_markdown,
 )
 
 # Un replay de 40 minutes pèse ~2 Mo ; 12 Mo laissent large sans permettre à un
@@ -158,12 +160,14 @@ async def read_capped(upload: UploadFile, lang: str = "fr") -> bytes:
     return b"".join(chunks)
 
 
-def extract_markdown(path: str, options: Options, with_prompt: bool) -> tuple[str, dict]:
+def extract_markdown(path: str, options: Options, with_prompt: bool) -> tuple[str, dict, dict]:
+    """Renvoie (markdown à copier, rapport à afficher, résumé pour la télémétrie)."""
     data, stats = read_replay(path)
-    markdown = render_replay(data, stats, options)
+    report = build_report(data, stats, options)
+    markdown = render_markdown(report, options)
     if with_prompt:
         markdown = build_coach_prompt(1, options.lang) + markdown
-    return markdown, describe_replay(data)
+    return markdown, report, describe_replay(data)
 
 
 @app.get("/api/health")
@@ -217,7 +221,7 @@ async def extract(
         with os.fdopen(handle, "wb") as fh:
             fh.write(payload)
         try:
-            markdown, meta = await asyncio.wait_for(
+            markdown, report, meta = await asyncio.wait_for(
                 run_in_threadpool(extract_markdown, path, options, prompt.lower() != "false"),
                 timeout=PARSE_TIMEOUT_S,
             )
@@ -243,7 +247,15 @@ async def extract(
     if crossed:
         emit("usage_threshold_crossed", threshold=FEEDBACK_THRESHOLD, count=_usage["count"])
 
-    return JSONResponse({"markdown": markdown, "meta": meta, "ms": elapsed_ms})
+    # Les libellés voyagent avec le rapport : le client rend son HTML avec exactement
+    # les mêmes mots que le Markdown, sans en tenir une seconde copie.
+    return JSONResponse({
+        "markdown": markdown,
+        "report": report,
+        "labels": labels(lang),
+        "meta": meta,
+        "ms": elapsed_ms,
+    })
 
 
 # Monté en dernier : le catch-all statique ne doit pas masquer les routes /api.

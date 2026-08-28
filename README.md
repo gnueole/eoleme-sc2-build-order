@@ -54,7 +54,7 @@ OneDrive sous WSL. `SC2_REPLAY_DIR` ou `--replay-dir` le forcent.
 
 ```bash
 make venv     # environnement Python
-make test     # 51 tests
+make test     # 58 tests
 make up       # conteneur sur http://localhost:3050
 make logs
 make down
@@ -106,7 +106,7 @@ La CLI et le site partagent exactement le même moteur : une correction faite da
 
 | Route | Rôle |
 |---|---|
-| `POST /api/extract` | Multipart : `replay`, plus `cutoff`, `players`, `format`, `workers`, `prompt`. Renvoie `{markdown, meta, ms}`. |
+| `POST /api/extract` | Multipart : `replay`, plus `cutoff`, `players`, `format`, `workers`, `prompt`, `lang`. Renvoie `{markdown, report, labels, meta, ms}`. |
 | `GET /api/health` | État, version, plafond de taille, usage du jour. |
 | `GET /` | L'interface. |
 

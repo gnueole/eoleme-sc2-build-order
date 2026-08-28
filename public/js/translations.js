@@ -27,7 +27,9 @@ export const TRANSLATIONS = {
     check_prompt: "Ajouter la consigne de coaching",
 
     btn_extract: "Extraire la build order",
-    panel_markdown: "Markdown",
+    panel_markdown: "La build order",
+    view_pretty: "Aperçu",
+    view_markdown: "Markdown",
     btn_copy: "Copier le Markdown",
     btn_download: "Télécharger le .md",
     panel_failure: "Échec",
@@ -78,7 +80,9 @@ export const TRANSLATIONS = {
     check_prompt: "Add the coaching prompt",
 
     btn_extract: "Extract the build order",
-    panel_markdown: "Markdown",
+    panel_markdown: "The build order",
+    view_pretty: "Preview",
+    view_markdown: "Markdown",
     btn_copy: "Copy the Markdown",
     btn_download: "Download the .md",
     panel_failure: "Failed",

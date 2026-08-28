@@ -306,7 +306,12 @@ def describe_replay(data: dict) -> dict:
 # --------------------------------------------------------------------------
 
 
-def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) -> str:
+def build_report(data: dict, stats: dict[int, list[dict]], options: Options) -> dict:
+    """
+    La forme intermédiaire dont dérivent le Markdown *et* l'affichage HTML.
+    Sans elle, le serveur rendrait le Markdown et le client fabriquerait son HTML
+    de son côté : les deux dériveraient au premier changement.
+    """
     L = labels(options.lang)
     lang = options.lang
     fps = data["frames_per_second"]
@@ -316,46 +321,126 @@ def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) ->
     chosen = select_players(data, options.player, options.all_players)
     step = 60 if horizon <= 15 * 60 else 120
 
-    out: list[str] = []
-    played = datetime.fromtimestamp(data["unix_timestamp"], tz=timezone.utc)
-
-    # Le matchup décrit la partie, pas la sélection : il reste TvZ même si l'on
-    # n'extrait qu'un seul camp. Au-delà de deux joueurs (Coop, 2v2) il ne veut
-    # plus rien dire, on n'affiche que la carte.
     everyone = sorted(data["players"].items())
+    matchup = None
     if len(everyone) == 2:
         matchup = "v".join(RACE_LETTER.get(p["race"], (p["race"] or "?")[:1]) for _, p in everyone)
-        out.append(f"# {data['map']} — {matchup}")
-    else:
-        out.append(f"# {data['map']}")
-    out.append("")
 
-    c = L["colon"]
-    out.append(" · ".join([
-        f"**{L['map']}{c}** {data['map']}",
-        f"**{L['duration']}{c}** {fmt_time(duration)}",
-        f"**{L['played']}{c}** {played:%Y-%m-%d %H:%M} UTC",
-        f"**{L['patch']}{c}** build {data['build']}",
-        f"**{L['kind']}{c}** {data.get('category', '?')} {data.get('game_type', '')}".strip(),
-    ]))
-    out.append("")
-
+    played = datetime.fromtimestamp(data["unix_timestamp"], tz=timezone.utc)
     verdicts = {"Win": L["win"], "Loss": L["loss"]}
-    for _, p in everyone:
-        verdict = verdicts.get(p["result"], p["result"] or "?")
-        kind = "" if p["is_human"] else f" *({L['ai']})*"
-        out.append(f"- **{p['name']}**{kind} — {p['race']} — {verdict}")
-    out.append("")
 
-    if cutoff and cutoff < duration:
-        out.append("> " + L["truncated"].format(cut=fmt_time(cutoff), full=fmt_time(duration)))
-        out.append("")
+    report = {
+        "lang": lang,
+        "map": data["map"],
+        "matchup": matchup,
+        "duration": fmt_time(duration),
+        "played": played.strftime("%Y-%m-%d %H:%M"),
+        "build": data["build"],
+        "category": data.get("category") or "?",
+        "game_type": data.get("game_type") or "",
+        "cutoff": fmt_time(cutoff) if cutoff and cutoff < duration else None,
+        "roster": [
+            {
+                "name": p["name"],
+                "race": p["race"],
+                "result": verdicts.get(p["result"], p["result"] or "?"),
+                "won": p["result"] == "Win",
+                "is_human": bool(p["is_human"]),
+            }
+            for _, p in everyone
+        ],
+        "sections": [],
+    }
 
     for pid, p in chosen:
-        out.append(f"## {p['name']} — {p['race']}")
+        rows = build_order_rows(p, fps, cutoff, options.workers)
+        section = {
+            "name": p["name"],
+            "race": p["race"],
+            "result": verdicts.get(p["result"], p["result"] or "?"),
+            "won": p["result"] == "Win",
+            "is_human": bool(p["is_human"]),
+            "build": [
+                {
+                    "supply": e["supply"],
+                    "time": e["time"],
+                    "action": pretty(e["name"], lang),
+                    "chrono": bool(e["is_chronoboosted"]),
+                    "worker": bool(e["is_worker"]),
+                }
+                for e in rows
+            ],
+            "workers_folded": 0,
+            "economy": [],
+            "supply_blocks": [],
+            "macro": [],
+            "losses": {"total": 0, "items": []},
+        }
+
+        if rows:
+            if options.workers != "all":
+                produced = sum(1 for e in p["buildOrder"] if e["is_worker"])
+                section["workers_folded"] = produced
+
+            samples = stats.get(pid, [])
+            if options.workers != "none":
+                section["economy"] = economy_rows(samples, fps, horizon, step)
+            section["supply_blocks"] = supply_blocks(samples, fps, horizon)
+
+            abilities = [e for e in p["abilities"] if cutoff is None or seconds_of(e, fps) <= cutoff]
+            counts = Counter(ABILITY_LABELS.get(e["name"], pretty(e["name"], lang)) for e in abilities)
+            section["macro"] = [{"name": n, "count": c} for n, c in counts.most_common()]
+
+            losses = [e for e in p["unitsLost"] if cutoff is None or seconds_of(e, fps) <= cutoff]
+            # killer=None : mutation en bâtiment ou sabordage, pas une perte au combat.
+            killed = [e for e in losses if e["killer"] is not None and e["killer"] != pid]
+            lost = Counter(pretty(e["name"], lang) for e in killed)
+            section["losses"] = {
+                "total": len(killed),
+                "items": [{"name": n, "count": c} for n, c in lost.most_common(12)],
+            }
+
+        report["sections"].append(section)
+
+    return report
+
+
+def render_markdown(report: dict, options: Options) -> str:
+    """Le Markdown, rendu depuis le rapport et lui seul."""
+    L = labels(report["lang"])
+    c = L["colon"]
+    out: list[str] = []
+
+    heading = f"# {report['map']}"
+    if report["matchup"]:
+        heading += f" — {report['matchup']}"
+    out.append(heading)
+    out.append("")
+
+    facts = [
+        f"**{L['map']}{c}** {report['map']}",
+        f"**{L['duration']}{c}** {report['duration']}",
+        f"**{L['played']}{c}** {report['played']} UTC",
+        f"**{L['patch']}{c}** build {report['build']}",
+        f"**{L['kind']}{c}** {report['category']} {report['game_type']}".strip(),
+    ]
+    out.append(" · ".join(facts))
+    out.append("")
+
+    for p in report["roster"]:
+        kind = "" if p["is_human"] else f" *({L['ai']})*"
+        out.append(f"- **{p['name']}**{kind} — {p['race']} — {p['result']}")
+    out.append("")
+
+    if report["cutoff"]:
+        out.append("> " + L["truncated"].format(cut=report["cutoff"], full=report["duration"]))
         out.append("")
 
-        rows = build_order_rows(p, fps, cutoff, options.workers)
+    for section in report["sections"]:
+        out.append(f"## {section['name']} — {section['race']}")
+        out.append("")
+
+        rows = section["build"]
         if not rows:
             out.append(f"_{L['no_build']}_")
             out.append("")
@@ -365,38 +450,32 @@ def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) ->
             out.append(f"| {L['col_supply']} | {L['col_time']} | {L['col_action']} |")
             out.append("|--:|--:|---|")
             for e in rows:
-                mark = " ⚡" if e["is_chronoboosted"] else ""
-                out.append(f"| {e['supply']} | {e['time']} | {pretty(e['name'], lang)}{mark} |")
+                mark = " ⚡" if e["chrono"] else ""
+                out.append(f"| {e['supply']} | {e['time']} | {e['action']}{mark} |")
         elif options.format == "list":
             for i, e in enumerate(rows, 1):
-                mark = " ⚡" if e["is_chronoboosted"] else ""
-                out.append(f"{i}. `{e['supply']} {L['supply_unit']} · {e['time']}` "
-                           f"{pretty(e['name'], lang)}{mark}")
+                mark = " ⚡" if e["chrono"] else ""
+                out.append(f"{i}. `{e['supply']} {L['supply_unit']} · {e['time']}` {e['action']}{mark}")
         else:
             width = max(len(str(e["supply"])) for e in rows)
             out.append("```text")
             for e in rows:
-                mark = f" ({L['chrono']})" if e["is_chronoboosted"] else ""
-                out.append(f"{str(e['supply']).rjust(width)}  {e['time']:>5}  "
-                           f"{pretty(e['name'], lang)}{mark}")
+                mark = f" ({L['chrono']})" if e["chrono"] else ""
+                out.append(f"{str(e['supply']).rjust(width)}  {e['time']:>5}  {e['action']}{mark}")
             out.append("```")
         out.append("")
 
-        if options.workers != "all":
-            produced = sum(1 for e in p["buildOrder"] if e["is_worker"])
-            if produced:
-                out.append("_" + L["workers_folded"].format(n=produced) + "_")
-                out.append("")
+        if section["workers_folded"]:
+            out.append("_" + L["workers_folded"].format(n=section["workers_folded"]) + "_")
+            out.append("")
 
-        samples = stats.get(pid, [])
-        eco = economy_rows(samples, fps, horizon, step)
-        if eco and options.workers != "none":
+        if section["economy"]:
             out.append(f"### {L['economy']}")
             out.append("")
             out.append(f"| {L['col_time']} | {L['col_supply']} | {L['col_workers']} "
                        f"| {L['col_minerals']} | {L['col_gas']} | {L['col_income']} |")
             out.append("|--:|--:|--:|--:|--:|--:|")
-            for row in eco:
+            for row in section["economy"]:
                 out.append(
                     f"| {row['at']} | {row['food_used']}/{row['food_made']} | {row['workers']} "
                     f"| {row['minerals']} | {row['vespene']} "
@@ -404,25 +483,28 @@ def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) ->
                 )
             out.append("")
 
-        blocks = supply_blocks(samples, fps, horizon)
-        if blocks:
-            out.append(f"**{L['supply_blocked']} —** {' · '.join(blocks)}")
+        if section["supply_blocks"]:
+            out.append(f"**{L['supply_blocked']} —** {' · '.join(section['supply_blocks'])}")
             out.append("")
 
-        abilities = [e for e in p["abilities"] if cutoff is None or seconds_of(e, fps) <= cutoff]
-        if abilities:
-            counts = Counter(ABILITY_LABELS.get(e["name"], pretty(e["name"], lang)) for e in abilities)
-            out.append(f"**{L['macro']} —** " + " · ".join(f"{n} ×{c}" for n, c in counts.most_common()))
+        if section["macro"]:
+            out.append(f"**{L['macro']} —** "
+                       + " · ".join(f"{m['name']} ×{m['count']}" for m in section["macro"]))
             out.append("")
 
-        losses = [e for e in p["unitsLost"] if cutoff is None or seconds_of(e, fps) <= cutoff]
-        # killer=None : mutation en bâtiment ou sabordage, pas une perte au combat.
-        killed = [e for e in losses if e["killer"] is not None and e["killer"] != pid]
-        if killed:
-            out.append(f"**{L['losses']} ({len(killed)}) —** " + summarise(killed, lang, top=12))
+        losses = section["losses"]
+        if losses["total"]:
+            listed = " · ".join(f"{i['name']} ×{i['count']}" if i["count"] > 1 else i["name"]
+                                for i in losses["items"])
+            out.append(f"**{L['losses']} ({losses['total']}) —** " + listed)
             out.append("")
 
     return "\n".join(out).rstrip() + "\n"
+
+
+def render_replay(data: dict, stats: dict[int, list[dict]], options: Options) -> str:
+    """Raccourci historique : rapport puis Markdown, en un appel."""
+    return render_markdown(build_report(data, stats, options), options)
 
 
 COACH_OPENING = {

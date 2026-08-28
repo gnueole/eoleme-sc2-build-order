@@ -6,6 +6,7 @@ contient les pseudonymes des deux joueurs. Les tests qui ont besoin d'un vrai
 fichier sont donc à lancer à la main via cli.py.
 """
 
+import re
 import sys
 from pathlib import Path
 
@@ -24,6 +25,7 @@ from sc2bo.extract import (
     parse_time,
     labels,
     pretty,
+    render_markdown,
     select_players,
     summarise,
     supply_blocks,
@@ -217,3 +219,88 @@ class TestOptionsLanguage:
         entries = [{"name": None}, {"name": None}]
         assert summarise(entries, "en") == "unknown unit ×2"
         assert summarise(entries, "fr") == "unité inconnue ×2"
+
+
+class TestReportContract:
+    """
+    Le HTML du client se construit à partir des libellés que le serveur renvoie.
+    Si une clé disparaît côté Python, l'affichage casse sans que rien ne le dise :
+    ce test relie les deux.
+    """
+
+    def client_keys(self):
+        app = Path(__file__).resolve().parents[1] / "public" / "js" / "app.js"
+        source = app.read_text(encoding="utf-8")
+        # L.duration, L["col_time"], et les clés listées pour l'entête d'économie.
+        keys = set(re.findall(r"\bL\.([a-z_]+)\b", source))
+        keys |= set(re.findall(r'\bL\["([a-z_]+)"\]', source))
+        keys |= set(re.findall(r'"(col_[a-z_]+)"', source))
+        return keys
+
+    def test_every_label_the_page_uses_exists_in_both_languages(self):
+        missing_fr = sorted(self.client_keys() - set(LABELS["fr"]))
+        missing_en = sorted(self.client_keys() - set(LABELS["en"]))
+        assert not missing_fr, f"libellés absents en fr : {missing_fr}"
+        assert not missing_en, f"libellés absents en en : {missing_en}"
+
+    def test_the_page_actually_uses_labels(self):
+        # Garde-fou du garde-fou : si l'extraction ne trouve rien, le test au-dessus
+        # passerait pour de mauvaises raisons.
+        assert len(self.client_keys()) >= 10
+
+
+class TestRenderMarkdownFromReport:
+    def report(self):
+        return {
+            "lang": "fr", "map": "Ley Lines", "matchup": "TvZ", "duration": "12:30",
+            "played": "2026-08-28 15:00", "build": 97563, "category": "Ladder",
+            "game_type": "1v1", "cutoff": None,
+            "roster": [
+                {"name": "Éole", "race": "Terran", "result": "Victoire", "won": True, "is_human": True},
+                {"name": "A.I.", "race": "Zerg", "result": "Défaite", "won": False, "is_human": False},
+            ],
+            "sections": [{
+                "name": "Éole", "race": "Terran", "result": "Victoire", "won": True, "is_human": True,
+                "build": [
+                    {"supply": 14, "time": "0:20", "action": "Supply Depot", "chrono": False, "worker": False},
+                    {"supply": 16, "time": "0:42", "action": "Barracks", "chrono": True, "worker": False},
+                ],
+                "workers_folded": 12,
+                "economy": [{"at": "1:00", "food_used": 15, "food_made": 15, "workers": 15,
+                             "minerals": 120, "vespene": 0, "mineral_rate": 615, "vespene_rate": 0}],
+                "supply_blocks": ["0:55→1:10"],
+                "macro": [{"name": "MULE", "count": 3}],
+                "losses": {"total": 2, "items": [{"name": "Marine", "count": 2}]},
+            }],
+        }
+
+    def test_table_format_carries_every_section(self):
+        md = render_markdown(self.report(), Options(format="table"))
+        assert "# Ley Lines — TvZ" in md
+        assert "| 14 | 0:20 | Supply Depot |" in md
+        assert "⚡" in md                      # le chrono est signalé
+        assert "### Économie" in md
+        assert "Ravitaillement bloqué" in md
+        assert "MULE ×3" in md
+        assert "Pertes au combat (2)" in md
+        assert "Les 12 travailleurs produits" in md
+
+    def test_raw_format_aligns_the_columns(self):
+        md = render_markdown(self.report(), Options(format="raw"))
+        assert "```text" in md
+        assert "(chrono)" in md
+
+    def test_list_format_numbers_the_steps(self):
+        md = render_markdown(self.report(), Options(format="list"))
+        assert "1. `14 ravit. · 0:20` Supply Depot" in md
+
+    def test_a_missing_matchup_leaves_the_heading_bare(self):
+        r = self.report()
+        r["matchup"] = None
+        assert render_markdown(r, Options()).startswith("# Ley Lines\n")
+
+    def test_english_report_uses_english_labels(self):
+        r = self.report()
+        r["lang"] = "en"
+        md = render_markdown(r, Options(lang="en"))
+        assert "**Map:**" in md and "### Economy" in md

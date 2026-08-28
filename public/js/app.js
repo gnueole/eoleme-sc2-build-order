@@ -30,6 +30,9 @@ function applyTheme(theme) {
 
   try { localStorage.setItem("preferred-theme", theme); } catch (e) { /* mode privé */ }
 
+  document.querySelectorAll("[data-view-choice]").forEach((btn) =>
+    btn.addEventListener("click", () => { view = btn.dataset.viewChoice; applyView(); }));
+
   document.querySelectorAll("[data-theme-choice]").forEach((btn) => {
     btn.setAttribute("aria-pressed", String(btn.dataset.themeChoice === theme));
   });
@@ -111,6 +114,7 @@ let picked = null;
 let markdown = "";
 let basename = "build-order";
 let lastResult = null;
+let view = "pretty";
 
 function setFile(f) {
   picked = f;
@@ -127,10 +131,121 @@ function fail(message) {
   $("errmsg").textContent = message;
 }
 
+function esc(value) {
+  return String(value).replace(/[&<>"']/g, (ch) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+}
+
+/* Le HTML dérive du rapport renvoyé par le serveur, avec les libellés que le
+   serveur a lui-même employés pour le Markdown : les deux vues disent donc
+   exactement la même chose, dans les mêmes mots. */
+function renderReport(report, L) {
+  const h = [];
+
+  h.push('<div class="rep-head">');
+  h.push("<h3>" + esc(report.map) +
+    (report.matchup ? ' <span class="mu">' + esc(report.matchup) + "</span>" : "") + "</h3>");
+  const facts = [
+    [L.duration, report.duration],
+    [L.played, report.played + " UTC"],
+    [L.patch, "build " + report.build],
+    [L.kind, (report.category + " " + report.game_type).trim()],
+  ];
+  h.push('<p class="facts">' + facts
+    .map((f) => "<span>" + esc(f[0]) + esc(L.colon) + " <b>" + esc(f[1]) + "</b></span>")
+    .join("") + "</p>");
+  h.push('<ul class="roster">' + report.roster.map((p) =>
+    "<li>" + esc(p.name) +
+    (p.is_human ? "" : ' <span class="tag">' + esc(L.ai) + "</span>") +
+    ' <span class="race">' + esc(p.race) + "</span>" +
+    ' <span class="verdict ' + (p.won ? "win" : "loss") + '">' + esc(p.result) + "</span></li>"
+  ).join("") + "</ul>");
+  if (report.cutoff) {
+    h.push('<p class="cut">' +
+      esc(L.truncated.replace("{cut}", report.cutoff).replace("{full}", report.duration)) + "</p>");
+  }
+  h.push("</div>");
+
+  for (const s of report.sections) {
+    h.push('<section class="sect">');
+    h.push("<h4>" + esc(s.name) + ' <span class="race">' + esc(s.race) + "</span>" +
+      ' <span class="verdict ' + (s.won ? "win" : "loss") + '">' + esc(s.result) + "</span></h4>");
+
+    if (!s.build.length) {
+      h.push('<p class="muted">' + esc(L.no_build) + "</p></section>");
+      continue;
+    }
+
+    h.push('<div class="scroll"><table class="bo"><thead><tr><th class="num">' +
+      esc(L.col_supply) + '</th><th class="num">' + esc(L.col_time) + "</th><th>" +
+      esc(L.col_action) + "</th></tr></thead><tbody>");
+    for (const e of s.build) {
+      h.push("<tr" + (e.worker ? ' class="wk"' : "") + '><td class="num sup">' + esc(e.supply) +
+        '</td><td class="num t">' + esc(e.time) + "</td><td>" + esc(e.action) +
+        (e.chrono ? ' <span class="chrono" title="' + esc(L.chrono) + '">⚡</span>' : "") +
+        "</td></tr>");
+    }
+    h.push("</tbody></table></div>");
+
+    if (s.workers_folded) {
+      h.push('<p class="muted">' + esc(L.workers_folded.replace("{n}", s.workers_folded)) + "</p>");
+    }
+
+    if (s.economy.length) {
+      h.push("<h5>" + esc(L.economy) + '</h5><div class="scroll"><table class="eco"><thead><tr>' +
+        ["col_time", "col_supply", "col_workers", "col_minerals", "col_gas", "col_income"]
+          .map((k) => '<th class="num">' + esc(L[k]) + "</th>").join("") +
+        "</tr></thead><tbody>");
+      for (const r of s.economy) {
+        /* Le ravitaillement qui touche sa capacité est signalé : c'est le moment
+           où la production s'arrête, et c'est ce qu'on vient chercher ici. */
+        const blocked = r.food_used >= r.food_made && r.food_made < 200;
+        h.push('<tr><td class="num t">' + esc(r.at) +
+          '</td><td class="num' + (blocked ? " bad" : "") + '">' +
+          esc(r.food_used) + "/" + esc(r.food_made) +
+          '</td><td class="num">' + esc(r.workers) +
+          '</td><td class="num">' + esc(r.minerals) +
+          '</td><td class="num">' + esc(r.vespene) +
+          '</td><td class="num">' + esc(r.mineral_rate) + "/" + esc(r.vespene_rate) +
+          "</td></tr>");
+      }
+      h.push("</tbody></table></div>");
+    }
+
+    if (s.supply_blocks.length) {
+      h.push('<p class="line"><span class="lbl">' + esc(L.supply_blocked) + "</span>" +
+        s.supply_blocks.map((b) => '<span class="chip warn">' + esc(b) + "</span>").join("") + "</p>");
+    }
+    if (s.macro.length) {
+      h.push('<p class="line"><span class="lbl">' + esc(L.macro) + "</span>" +
+        s.macro.map((m) => '<span class="chip">' + esc(m.name) + " <b>×" + esc(m.count) +
+          "</b></span>").join("") + "</p>");
+    }
+    if (s.losses.total) {
+      h.push('<p class="line"><span class="lbl">' + esc(L.losses) + " (" + esc(s.losses.total) +
+        ")</span>" + s.losses.items.map((i) => '<span class="chip">' + esc(i.name) +
+          (i.count > 1 ? " <b>×" + esc(i.count) + "</b>" : "") + "</span>").join("") + "</p>");
+    }
+    h.push("</section>");
+  }
+
+  return h.join("");
+}
+
+function applyView() {
+  show($("view"), view === "pretty");
+  show($("out"), view === "markdown");
+  document.querySelectorAll("[data-view-choice]").forEach((btn) => {
+    btn.setAttribute("aria-pressed", String(btn.dataset.viewChoice === view));
+  });
+}
+
 function renderResult(res) {
   lastResult = res;
   markdown = res.markdown;
   $("out").textContent = markdown;
+  $("view").innerHTML = renderReport(res.report, res.labels);
+
   const m = res.meta || {};
   const chips = [];
   if (m.map) chips.push([t("chip_map"), m.map]);
@@ -139,9 +254,10 @@ function renderResult(res) {
   if (m.players) chips.push([t("chip_players"), m.players]);
   chips.push([t("chip_lines"), markdown.split("\n").length]);
   $("meta").innerHTML = chips
-    .map((c) => '<span class="chip">' + c[0] + " <b>" + String(c[1]).replace(/</g, "&lt;") + "</b></span>")
+    .map((c) => '<span class="chip">' + esc(c[0]) + " <b>" + esc(c[1]) + "</b></span>")
     .join("");
   $("timing").textContent = t("read_in", { ms: res.ms });
+  applyView();
   show($("result"), true);
 }
 
@@ -227,6 +343,9 @@ function wire() {
     document.body.removeChild(a);
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+
+  document.querySelectorAll("[data-view-choice]").forEach((btn) =>
+    btn.addEventListener("click", () => { view = btn.dataset.viewChoice; applyView(); }));
 
   document.querySelectorAll("[data-theme-choice]").forEach((btn) =>
     btn.addEventListener("click", () => applyTheme(btn.dataset.themeChoice)));

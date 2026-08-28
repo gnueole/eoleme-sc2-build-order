@@ -4,6 +4,28 @@ Toutes les évolutions notables de SC2 Build Order Forge.
 Le format suit [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/)
 et le versionnage [SemVer](https://semver.org/lang/fr/).
 
+## [1.3.0] — 2026-08-28
+
+### Ajouté
+- **La build order s'affiche en HTML** plutôt qu'en Markdown brut : vraies
+  tables, ravitaillement en couleur, ⚡ sur les productions accélérées,
+  ravitaillement en butée signalé en rouge dans le tableau d'économie, verdicts
+  et blocages en pastilles. Le bouton **Copier le Markdown** reste, et une
+  bascule *Aperçu / Markdown* permet de voir ce que l'on copie.
+
+### Modifié
+- Le moteur expose désormais `build_report()`, une structure intermédiaire dont
+  le Markdown **et** le HTML dérivent tous les deux. Sans elle, le serveur
+  rendrait le Markdown pendant que le client fabriquerait son HTML de son côté,
+  et les deux dériveraient au premier changement. `render_replay()` est conservé
+  comme raccourci : la sortie Markdown est inchangée, vérifiée par comparaison
+  de 24 rendus (8 replays × 3 combinaisons d'options) avant et après le
+  découpage — zéro différence.
+- La réponse de `/api/extract` transporte le rapport **et les libellés employés**.
+  Le client rend donc son HTML avec exactement les mots du Markdown, sans en
+  tenir une seconde copie. Un test relie les clés utilisées par `app.js` au
+  dictionnaire Python : en supprimer une casserait l'affichage en silence.
+
 ## [1.2.0] — 2026-08-28
 
 ### Ajouté

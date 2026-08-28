@@ -336,6 +336,67 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
 }
 .chip b { color: var(--secondary-color); font-weight: 600; }
 
+/* ---------- rendu de la build order ---------- */
+
+.head-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+.view { padding: 4px 20px 20px; }
+
+.rep-head { padding: 16px 0 8px; border-bottom: 1px solid var(--border-color); }
+.rep-head h3 { font-family: var(--font-title); font-size: 21px; font-weight: 800; letter-spacing: -0.02em; margin: 0; }
+.rep-head h3 .mu {
+  font-family: var(--font-mono); font-size: 14px; font-weight: 500;
+  color: var(--accent-ink); background: var(--accent-color);
+  padding: 3px 9px; border-radius: 6px; vertical-align: 3px; margin-left: 6px;
+}
+.facts { margin: 10px 0 0; display: flex; gap: 6px 18px; flex-wrap: wrap; font-size: 13px; color: var(--text-muted); }
+.facts b { color: var(--text-color); font-weight: 500; }
+.roster { list-style: none; margin: 12px 0 0; padding: 0; display: flex; gap: 8px 20px; flex-wrap: wrap; font-size: 14px; }
+.roster li { display: flex; align-items: center; gap: 7px; }
+.race { font-family: var(--font-mono); font-size: 11.5px; color: var(--text-faint); }
+.tag {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-faint); border: 1px solid var(--border-color); border-radius: 4px; padding: 1px 5px;
+}
+.verdict { font-family: var(--font-mono); font-size: 11px; padding: 2px 8px; border-radius: 5px; }
+.verdict.win { color: #10b981; background: rgba(16, 185, 129, 0.14); }
+.verdict.loss { color: var(--error-color); background: var(--error-bg); }
+.cut { margin: 12px 0 0; font-size: 13px; color: var(--secondary-color); }
+
+.sect { padding-top: 22px; }
+.sect h4 { font-family: var(--font-title); font-size: 17px; font-weight: 600; margin: 0 0 12px; display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.sect h5 { font-family: var(--font-title); font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); margin: 20px 0 8px; }
+
+/* CSS_TOPOLOGY.md §6 : le débordement se gère dans son propre conteneur,
+   jamais en laissant la page défiler latéralement. */
+.scroll { overflow-x: auto; max-height: 42vh; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+
+.view table { border-collapse: collapse; width: 100%; font-size: 13px; }
+.view thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--bg-elevated);
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); font-weight: 500; text-align: left;
+  padding: 9px 12px; border-bottom: 1px solid var(--border-color); white-space: nowrap;
+}
+.view td { padding: 7px 12px; border-bottom: 1px solid var(--border-color); }
+.view tbody tr:last-child td { border-bottom: 0; }
+.view tbody tr:hover td { background: var(--card-hover-bg); }
+.view th.num, .view td.num { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.view td.sup { color: var(--secondary-color); font-weight: 600; }
+.view td.t { color: var(--text-faint); }
+.view td.num.bad { color: var(--error-color); font-weight: 600; }
+.view tr.wk td { color: var(--text-faint); }
+.chrono { color: var(--secondary-color); }
+
+.line { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin: 14px 0 0; }
+.line .lbl {
+  font-family: var(--font-mono); font-size: 10.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint);
+}
+.chip.warn { color: var(--secondary-color); border-color: var(--secondary-color); }
+.muted { font-size: 12.5px; color: var(--text-faint); margin: 10px 0 0; font-style: italic; }
+
 pre.out {
   margin: 0;
   padding: 20px;
