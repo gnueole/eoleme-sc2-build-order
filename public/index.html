@@ -5,102 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Build Order Forge — sc2.eole.me</title>
 <meta name="description" content="Déposez un replay StarCraft II, récupérez sa build order en Markdown, prête à coller dans Claude.">
+<meta name="theme-color" content="#080b11" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚔️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=Oswald:wght@400;500;600&display=swap">
-<style>
-:root {
-  --ground:#E8EDEE; --surface:#F8FAFB; --surface-2:#DDE5E7;
-  --ink:#141D21; --muted:#56656A; --faint:#83959A;
-  --line:#C5D0D3; --line-soft:#D7DFE1;
-  --accent:#0E6E7A; --accent-ink:#FFFFFF; --accent-soft:#D3E8EA;
-  --brass:#96660F; --danger:#A33232; --danger-bg:#F2DDDC;
-  --shadow:0 1px 2px rgba(20,29,33,.06), 0 8px 24px rgba(20,29,33,.06);
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ground:#0C1316; --surface:#141E22; --surface-2:#1C282C;
-    --ink:#E2EAEC; --muted:#93A5AA; --faint:#6B7C81;
-    --line:#243237; --line-soft:#1D292D;
-    --accent:#3FB6C4; --accent-ink:#061214; --accent-soft:#10333A;
-    --brass:#D9A340; --danger:#E38A85; --danger-bg:#35191A;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
-  }
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--ground);color:var(--ink);
-  font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;font-size:15px;line-height:1.55;
-  -webkit-font-smoothing:antialiased}
-h1,h2{font-family:Oswald,"IBM Plex Sans",sans-serif;font-weight:500;letter-spacing:.01em;margin:0;text-wrap:balance}
-.mono{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums}
-.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
-
-.masthead{border-bottom:1px solid var(--line);background:var(--surface)}
-.masthead-in{max-width:1080px;margin:0 auto;padding:18px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.wordmark{font-family:Oswald,sans-serif;font-size:25px;font-weight:600;letter-spacing:.015em;text-transform:uppercase;display:flex;align-items:baseline;gap:9px}
-.wordmark .chev{color:var(--accent);font-size:19px}
-.tagline{color:var(--muted);font-size:13.5px;margin:2px 0 0;max-width:52ch}
-
-main{max-width:1080px;margin:0 auto;padding:26px 24px 80px;display:flex;flex-direction:column;gap:22px}
-.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:var(--shadow)}
-.panel-head{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line-soft);flex-wrap:wrap}
-.panel-head h2{font-size:15px;text-transform:uppercase;letter-spacing:.07em}
-
-/* zone de dépôt */
-.drop{margin:18px;border:1.5px dashed var(--line);border-radius:4px;padding:38px 22px;text-align:center;
-  cursor:pointer;transition:border-color .15s,background-color .15s;background:transparent}
-.drop:hover,.drop:focus-visible{border-color:var(--accent);background:var(--accent-soft);outline:none}
-.drop.over{border-color:var(--accent);border-style:solid;background:var(--accent-soft)}
-.drop .big{font-family:Oswald,sans-serif;font-size:19px;letter-spacing:.02em}
-.drop .small{color:var(--muted);font-size:13px;margin-top:5px}
-.drop .file{margin-top:10px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--accent)}
-input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
-
-/* options */
-.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px 18px;padding:0 18px 18px}
-.field{display:flex;flex-direction:column;gap:5px;min-width:0}
-.field label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
-input[type=text],select{font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);
-  padding:5px 2px;width:100%;border-radius:0;transition:border-color .12s,background-color .12s}
-input[type=text]:focus,select:focus{outline:none;border-bottom-color:var(--accent);background:var(--accent-soft)}
-select{appearance:none;cursor:pointer;padding-right:18px;
-  background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);
-  background-position:right 7px center,right 3px center;background-size:4px 4px,4px 4px;background-repeat:no-repeat}
-select option{background:var(--surface);color:var(--ink)}
-.check{display:flex;align-items:center;gap:8px;align-self:end;padding-bottom:6px}
-.check input{accent-color:var(--accent);width:auto}
-.check span{font-size:13px;color:var(--muted)}
-
-.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px 18px;border-top:1px solid var(--line-soft)}
-.btn{font-family:"IBM Plex Sans",sans-serif;font-size:13px;font-weight:500;padding:8px 16px;border-radius:3px;
-  border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer;
-  transition:background-color .12s,border-color .12s,color .12s}
-.btn:hover:not(:disabled){border-color:var(--muted);background:var(--surface-2)}
-.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
-.btn.primary:hover:not(:disabled){filter:brightness(1.08)}
-.btn:disabled{opacity:.5;cursor:not-allowed}
-.hint{font-size:12.5px;color:var(--faint);margin-left:auto;text-align:right}
-
-/* résultat */
-.meta{display:flex;gap:8px;flex-wrap:wrap;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:var(--surface-2)}
-.chip{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.05em;padding:4px 9px;border-radius:3px;
-  background:var(--surface);border:1px solid var(--line);color:var(--muted)}
-.chip b{color:var(--ink);font-weight:600}
-pre.out{margin:0;padding:16px 18px;max-height:56vh;overflow:auto;white-space:pre;
-  font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:11.5px;line-height:1.65;color:var(--muted);
-  border-bottom:1px solid var(--line-soft)}
-.error{margin:0;padding:16px 18px;color:var(--danger);background:var(--danger-bg);font-size:13.5px}
-.hidden{display:none}
-.spinner{display:inline-block;width:13px;height:13px;border:2px solid currentColor;border-right-color:transparent;
-  border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:7px}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
-
-footer{max-width:1080px;margin:0 auto;padding:0 24px 40px;color:var(--faint);font-size:12.5px}
-footer a{color:var(--accent)}
-</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=Inter:wght@400;500;600&family=Fira+Code:wght@400;500&display=swap">
+<link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 
@@ -187,7 +98,8 @@ footer a{color:var(--accent)}
 <footer>
   Le replay est lu en mémoire puis effacé : rien n'est stocké, rien n'est partagé.
   Les chiffres d'économie viennent des relevés que le jeu écrit lui-même dans le fichier.
-  <a href="https://github.com/gnueole/eoleme-sc2-build-order">Code source</a>.
+  <a href="https://github.com/gnueole/eoleme-sc2-build-order">Code source</a> ·
+  <a href="https://eole.me">eole.me</a>
 </footer>
 
 <script>

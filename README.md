@@ -81,12 +81,21 @@ redémarrer le conteneur.
 ## Architecture
 
 ```text
-sc2bo/extract.py   Moteur : lecture du replay, calculs, rendu Markdown
-cli.py             Interface ligne de commande (script uv autonome)
-server.py          Service HTTP FastAPI
-public/index.html  Interface web, sans build ni dépendance JS
-docker/            Dockerfile + compose local et production
+sc2bo/extract.py     Moteur : lecture du replay, calculs, rendu Markdown
+cli.py               Interface ligne de commande (script uv autonome)
+server.py            Service HTTP FastAPI
+public/index.html    Interface web, sans build ni dépendance JS
+public/css/styles.css Charte graphique eole.me
+docker/              Dockerfile + compose local et production
 ```
+
+L'interface suit la charte documentée dans `www/DESIGN_SYSTEM.md` du dépôt
+`eoleme-www` : persona *business*, fond `#080b11`, accent cyan `#38bdf8`,
+typographie Outfit / Inter / Fira Code. Comme `trail-mapper`, c'est une
+feuille de style locale qui reprend les **noms de tokens** de la charte plutôt
+qu'un import distant — les sous-pages autonomes ne partagent pas le bundle du
+site. Les pièges de `www/CSS_TOPOLOGY.md` sont respectés : pas de `100vw`,
+`100dvh` en complément de `100vh`, points de rupture `767.98px` / `768px`.
 
 La CLI et le site partagent exactement le même moteur : une correction faite dans
 `sc2bo/` vaut pour les deux.

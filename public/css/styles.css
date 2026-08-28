@@ -1,0 +1,333 @@
+/* ==========================================================================
+   sc2.eole.me — Build Order Forge
+   Charte graphique eole.me : voir www/DESIGN_SYSTEM.md et www/CSS_TOPOLOGY.md.
+   Sous-page autonome, donc feuille de style locale qui reprend les *noms* de
+   tokens de la charte, comme le fait trail-mapper (gpx.eole.me).
+   Persona : mode business (Julien) — l'outil est analytique, et le bleu néon
+   de la charte est aussi celui des interfaces Terran.
+   ========================================================================== */
+
+:root {
+  /* Mode business — thème sombre (DESIGN_SYSTEM.md §4) */
+  --bg-color:        #080b11;
+  --bg-elevated:     #0d1420;
+  --card-bg:         rgba(15, 23, 42, 0.40);
+  --card-hover-bg:   rgba(15, 23, 42, 0.70);
+  --text-color:      #f1f5f9;
+  --text-muted:      #94a3b8;
+  --text-faint:      #64748b;
+
+  --accent-color:    #38bdf8;
+  --accent-hover:    #7dd3fc;
+  --accent-glow:     rgba(56, 189, 248, 0.25);
+  --accent-ink:      #061018;
+
+  /* Chiffres de jeu : ravitaillement, timings, revenus */
+  --secondary-color: #f59e0b;
+  --secondary-hover: #fbbf24;
+
+  --border-color:    rgba(255, 255, 255, 0.08);
+  --border-hover:    rgba(255, 255, 255, 0.16);
+  --error-color:     #ef4444;
+  --error-bg:        rgba(239, 68, 68, 0.12);
+
+  /* Typographie de la charte (DESIGN_SYSTEM.md §3). Fira Code est la mono des
+     sous-pages autonomes, d'où Google Fonts ici plutôt que l'auto-hébergement. */
+  --font-title: 'Outfit', 'Inter', system-ui, sans-serif;
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono:  'Fira Code', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --theme-transition: 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  --radius: 10px;
+  --container: 1000px;
+}
+
+/* Mode business — thème clair (DESIGN_SYSTEM.md §4) */
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg-color:        #f8fafc;
+    --bg-elevated:     #ffffff;
+    --card-bg:         rgba(255, 255, 255, 0.60);
+    --card-hover-bg:   rgba(255, 255, 255, 0.90);
+    --text-color:      #0f172a;
+    --text-muted:      #475569;
+    --text-faint:      #64748b;
+
+    --accent-color:    #0284c7;
+    --accent-hover:    #0369a1;
+    --accent-glow:     rgba(2, 132, 199, 0.18);
+    --accent-ink:      #ffffff;
+
+    --secondary-color: #b45309;
+    --secondary-hover: #92400e;
+
+    --border-color:    rgba(15, 23, 42, 0.10);
+    --border-hover:    rgba(15, 23, 42, 0.20);
+    --error-bg:        rgba(239, 68, 68, 0.10);
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;              /* CSS_TOPOLOGY.md §6 : dvh en progressive upgrade */
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--theme-transition), color var(--theme-transition);
+}
+
+/* Halo ambiant, comme les « ambient glows » de layouts.css. Décoratif et inerte. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20% 0 auto 0;
+  height: 60vh;
+  background: radial-gradient(60% 60% at 50% 0%, var(--accent-glow), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+h1, h2, .title { font-family: var(--font-title); font-weight: 600; margin: 0; text-wrap: balance; }
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ---------- en-tête ---------- */
+
+.masthead { position: relative; z-index: 1; border-bottom: 1px solid var(--border-color); }
+.masthead-in {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 30px 24px 24px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.wordmark {
+  font-family: var(--font-title);
+  font-size: 30px;
+  font-weight: 800;               /* Outfit 800 : le poids de titre de la charte */
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+.wordmark .chev {
+  color: var(--accent-color);
+  font-size: 20px;
+  filter: drop-shadow(0 0 10px var(--accent-glow));
+}
+.tagline { color: var(--text-muted); font-size: 14px; margin: 4px 0 0; max-width: 56ch; }
+
+/* ---------- structure ---------- */
+
+main {
+  position: relative;
+  z-index: 1;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 28px 24px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.panel {
+  background: var(--card-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  transition: border-color .3s ease, background-color .3s ease;
+}
+.panel:hover { border-color: var(--border-hover); }
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+.panel-head h2 { font-size: 16px; letter-spacing: -0.01em; }
+
+/* ---------- zone de dépôt ---------- */
+
+.drop {
+  margin: 20px;
+  border: 1.5px dashed var(--border-hover);
+  border-radius: var(--radius);
+  padding: 44px 24px;
+  text-align: center;
+  cursor: pointer;
+  background: transparent;
+  transition: border-color .25s ease, background-color .25s ease, transform .25s ease;
+}
+.drop:hover, .drop:focus-visible {
+  border-color: var(--accent-color);
+  background: var(--accent-glow);
+  outline: none;
+}
+.drop.over { border-style: solid; border-color: var(--accent-color); background: var(--accent-glow); transform: scale(1.005); }
+.drop .big { font-family: var(--font-title); font-size: 20px; font-weight: 600; }
+.drop .small { color: var(--text-muted); font-size: 13.5px; margin-top: 7px; }
+.drop .file { margin-top: 12px; font-family: var(--font-mono); font-size: 13px; color: var(--accent-color); }
+input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ---------- champs ---------- */
+
+.opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px 20px; padding: 0 20px 20px; }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.field label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+input[type=text], select {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-color);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 9px 12px;
+  width: 100%;
+  min-width: 0;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+input[type=text]::placeholder { color: var(--text-faint); }
+input[type=text]:hover, select:hover { border-color: var(--border-hover); }
+input[type=text]:focus, select:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+select {
+  appearance: none;
+  cursor: pointer;
+  padding-right: 30px;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: right 14px center, right 9px center;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+}
+select option { background: var(--bg-elevated); color: var(--text-color); }
+
+.check { display: flex; align-items: center; gap: 10px; align-self: end; padding-bottom: 10px; }
+.check input { accent-color: var(--accent-color); width: auto; }
+.check span { font-size: 13.5px; color: var(--text-muted); }
+
+/* ---------- boutons ---------- */
+
+.actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; padding: 18px 20px; border-top: 1px solid var(--border-color); }
+
+.btn {
+  font-family: var(--font-title);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: 1px solid var(--border-hover);
+  background: var(--bg-elevated);
+  color: var(--text-color);
+  cursor: pointer;
+  transition: background-color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .1s ease;
+}
+.btn:hover:not(:disabled) { border-color: var(--accent-color); background: var(--card-hover-bg); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:focus-visible { outline: none; box-shadow: 0 0 0 3px var(--accent-glow); }
+.btn.primary {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: var(--accent-ink);
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
+.hint { font-size: 13px; color: var(--text-faint); margin-left: auto; text-align: right; }
+
+/* ---------- résultat ---------- */
+
+.meta { display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 20px; border-bottom: 1px solid var(--border-color); }
+.chip {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  padding: 5px 11px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+.chip b { color: var(--secondary-color); font-weight: 600; }
+
+pre.out {
+  margin: 0;
+  padding: 20px;
+  max-height: 58vh;
+  overflow: auto;
+  white-space: pre;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+}
+pre.out::-webkit-scrollbar { width: 10px; height: 10px; }
+pre.out::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 5px; }
+
+.error { margin: 0; padding: 18px 20px; color: var(--error-color); background: var(--error-bg); font-size: 14px; }
+
+.hidden { display: none; }
+.spinner {
+  display: inline-block; width: 13px; height: 13px;
+  border: 2px solid currentColor; border-right-color: transparent;
+  border-radius: 50%; animation: spin .7s linear infinite;
+  vertical-align: -2px; margin-right: 8px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer {
+  position: relative; z-index: 1;
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 0 24px 48px;
+  color: var(--text-faint);
+  font-size: 13px;
+}
+footer a { color: var(--accent-color); text-decoration: none; }
+footer a:hover { text-decoration: underline; }
+
+/* CSS_TOPOLOGY.md §7 : la paire est 767.98px / 768px, jamais 768px des deux côtés. */
+@media (max-width: 767.98px) {
+  .masthead-in { padding: 22px 18px 18px; }
+  .wordmark { font-size: 25px; }
+  main { padding: 20px 18px 60px; }
+  .drop { margin: 16px; padding: 34px 18px; }
+  .opts { padding: 0 16px 16px; }
+  .actions { padding: 16px; }
+  .hint { margin-left: 0; width: 100%; text-align: left; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, body { animation: none !important; transition: none !important; }
+  body::before { display: none; }
+}
