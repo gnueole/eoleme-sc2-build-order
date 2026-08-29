@@ -4,6 +4,16 @@ Every notable change to SC2 Build Order Forge.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
+## [1.6.1] — 2026-08-29
+
+### Fixed
+- **The container health check no longer floods the logs.** It calls
+  `/api/health` twice a minute and uvicorn logged every one: ~2,880 lines a day
+  of pure noise shipped to Axiom, burying the lines that mean something. A
+  logging filter drops those access records and leaves every other request
+  alone. Verified: three health calls produce no line, while `/` and the
+  stylesheet still log normally.
+
 ## [1.6.0] — 2026-08-29
 
 ### Added

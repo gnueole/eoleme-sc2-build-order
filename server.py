@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import mimetypes
 import os
 import sys
@@ -86,6 +87,19 @@ def say(lang: str, key: str, **fields) -> str:
     catalogue = MESSAGES.get(lang, MESSAGES["fr"])
     return catalogue[key].format(**fields)
 
+
+class DropHealthAccessLogs(logging.Filter):
+    """
+    The container health check calls /api/health twice a minute, and uvicorn logs
+    every one of them. That is ~2,880 lines a day of pure noise shipped to Axiom,
+    drowning the lines that mean something. Every other request still gets logged.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return "/api/health" not in record.getMessage()
+
+
+logging.getLogger("uvicorn.access").addFilter(DropHealthAccessLogs())
 
 patch_spawningtool()
 

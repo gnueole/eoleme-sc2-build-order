@@ -222,3 +222,25 @@ class TestCopyButtons:
         page = client.get("/").text
         labels = re.findall(r'id="copy(?:-top)?" data-i18n="([a-z_]+)"', page)
         assert labels == ["btn_copy", "btn_copy"], labels
+
+
+class TestHealthLogNoise:
+    def make_record(self, message):
+        import logging
+        return logging.LogRecord("uvicorn.access", logging.INFO, "", 0, message, None, None)
+
+    def test_the_health_check_is_kept_out_of_the_logs(self):
+        f = server.DropHealthAccessLogs()
+        assert f.filter(self.make_record('127.0.0.1:5 - "GET /api/health HTTP/1.1" 200 OK')) is False
+
+    def test_every_other_request_still_gets_logged(self):
+        f = server.DropHealthAccessLogs()
+        for line in ['1.2.3.4:5 - "POST /api/extract HTTP/1.1" 200 OK',
+                     '1.2.3.4:5 - "GET / HTTP/1.1" 200 OK',
+                     '1.2.3.4:5 - "GET /icons/btn-unit-terran-marine.webp HTTP/1.1" 200 OK']:
+            assert f.filter(self.make_record(line)) is True, line
+
+    def test_the_filter_is_attached_to_the_access_logger(self):
+        import logging
+        filters = logging.getLogger("uvicorn.access").filters
+        assert any(isinstance(f, server.DropHealthAccessLogs) for f in filters)
