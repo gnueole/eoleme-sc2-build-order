@@ -4,6 +4,26 @@ Every notable change to SC2 Build Order Forge.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
+## [1.6.0] — 2026-08-29
+
+### Added
+- **A second Copy the Markdown button, in the result panel head.** On a 94-step
+  build order the one at the foot is a long scroll away.
+- Three tests over the interface dictionary: both languages must carry the same
+  keys, and every key the markup or the script asks for must exist. Removing one
+  used to show the raw key to the user with nothing else complaining — which is
+  exactly what nearly happened while adding this button.
+
+### Changed
+- The copy confirmation now lands on the button that was pressed, replacing its
+  label briefly, rather than in a fixed line at the foot. Whichever button you
+  used, the answer is where your eye already is.
+
+### Removed
+- Five dead translation keys: the four `chip_*` left behind when the duplicated
+  chips row went, and `copy_blocked`, replaced by a label short enough for a
+  button.
+
 ## [1.5.0] — 2026-08-29
 
 ### Added

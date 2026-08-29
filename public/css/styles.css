@@ -369,6 +369,8 @@ select option { background: var(--bg-elevated); color: var(--text-color); }
   box-shadow: 0 4px 16px var(--accent-glow);
 }
 .btn.primary:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-sm { font-size: 12.5px; padding: 7px 13px; }
+
 .btn:disabled {
   /* At 45% the accent still reads as a live button on a dark ground; the button
      has to look unavailable, not merely quiet. */

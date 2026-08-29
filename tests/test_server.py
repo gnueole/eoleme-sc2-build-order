@@ -173,3 +173,52 @@ class TestHiddenUtility:
         page = client.get("/").text
         assert 'class="overlay hidden" id="about"' in page
         assert 'class="prompt-box hidden" id="prompt-preview"' in page
+
+
+class TestInterfaceDictionary:
+    """
+    The page reads its labels from translations.js by key. A key removed on one
+    side, or renamed without updating the markup, shows the raw key to the user
+    and nothing else complains.
+    """
+
+    def catalogues(self, client):
+        import re
+        js = client.get("/js/translations.js").text
+        fr = set(re.findall(r'^\s{4}([a-z_]+):', js.split("en: {")[0], re.M))
+        en = set(re.findall(r'^\s{4}([a-z_]+):', js.split("en: {")[1], re.M))
+        return fr, en
+
+    def test_both_languages_carry_the_same_keys(self, client):
+        fr, en = self.catalogues(client)
+        assert fr == en, f"écart : {sorted(fr ^ en)}"
+
+    def test_every_key_the_markup_asks_for_exists(self, client):
+        import re
+        html = client.get("/").text
+        used = set(re.findall(r'data-i18n(?:-placeholder|-aria|-title)?="([a-z_]+)"', html))
+        fr, _ = self.catalogues(client)
+        assert used, "aucune clé trouvée dans le HTML — l'extraction est cassée"
+        assert not (used - fr), f"absentes du dictionnaire : {sorted(used - fr)}"
+
+    def test_every_key_the_script_asks_for_exists(self, client):
+        import re
+        app = client.get("/js/app.js").text
+        used = set(re.findall(r'\bt\("([a-z_]+)"', app))
+        # Ces deux-là passent par une variable, pas par un littéral.
+        used |= {"copied_short", "copy_failed_short"}
+        fr, _ = self.catalogues(client)
+        assert not (used - fr), f"absentes du dictionnaire : {sorted(used - fr)}"
+
+
+class TestCopyButtons:
+    def test_the_markdown_can_be_copied_from_the_head_and_the_foot(self, client):
+        page = client.get("/").text
+        assert 'id="copy-top"' in page
+        assert 'id="copy"' in page
+
+    def test_both_carry_the_same_label_key(self, client):
+        import re
+        page = client.get("/").text
+        labels = re.findall(r'id="copy(?:-top)?" data-i18n="([a-z_]+)"', page)
+        assert labels == ["btn_copy", "btn_copy"], labels

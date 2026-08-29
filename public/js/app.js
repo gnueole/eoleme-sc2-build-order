@@ -284,6 +284,21 @@ function renderReport(report, L) {
   return h.join("");
 }
 
+function copyMarkdown(button) {
+  const restore = (key) => {
+    button.textContent = t(key);
+    setTimeout(() => { button.textContent = t(button.dataset.i18n); }, 2600);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(markdown).then(
+      () => restore("copied_short"),
+      () => restore("copy_failed_short"),
+    );
+  } else {
+    restore("copy_failed_short");
+  }
+}
+
 function applyView() {
   show($("view"), view === "pretty");
   show($("out"), view === "markdown");
@@ -364,19 +379,12 @@ function wire() {
 
   $("go").addEventListener("click", extract);
 
-  $("copy").addEventListener("click", () => {
-    const done = () => {
-      $("copied").textContent = t("copied");
-      setTimeout(() => { $("copied").textContent = ""; }, 2600);
-    };
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(markdown).then(done, () => {
-        $("copied").textContent = t("copy_blocked");
-      });
-    } else {
-      $("copied").textContent = t("copy_blocked");
-    }
-  });
+  /* Two copy buttons: one in the panel head, one at the foot. On a 94-step build
+     order the foot is a long scroll away. The confirmation lands on whichever
+     button was pressed, so it is where the eye already is. */
+  for (const id of ["copy-top", "copy"]) {
+    $(id).addEventListener("click", () => copyMarkdown($(id)));
+  }
 
   $("download").addEventListener("click", () => {
     const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });

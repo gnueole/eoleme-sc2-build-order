@@ -50,16 +50,12 @@ export const TRANSLATIONS = {
     panel_failure: "Échec",
 
     reading: "Lecture du replay…",
-    copied: "Copié — collez-le dans Claude.",
-    copy_blocked: "Copie bloquée — sélectionnez le texte ci-dessus.",
+    copied_short: "Copié !",
+    copy_failed_short: "Copie bloquée",
     no_response: "Le serveur n'a pas répondu. Vérifiez votre connexion et réessayez.",
     error_status: "Erreur {status}.",
     read_in: "lu en {ms} ms",
 
-    chip_map: "Carte",
-    chip_matchup: "Matchup",
-    chip_duration: "Durée",
-    chip_players: "Joueurs",
     chip_lines: "Lignes",
 
     footer: "Le replay est lu en mémoire puis effacé : rien n'est stocké, rien n'est partagé. Les chiffres d'économie viennent des relevés que le jeu écrit lui-même dans le fichier.",
@@ -119,16 +115,12 @@ export const TRANSLATIONS = {
     panel_failure: "Failed",
 
     reading: "Reading the replay…",
-    copied: "Copied — paste it into Claude.",
-    copy_blocked: "Copy blocked — select the text above.",
+    copied_short: "Copied!",
+    copy_failed_short: "Copy blocked",
     no_response: "The server did not answer. Check your connection and try again.",
     error_status: "Error {status}.",
     read_in: "read in {ms} ms",
 
-    chip_map: "Map",
-    chip_matchup: "Matchup",
-    chip_duration: "Length",
-    chip_players: "Players",
     chip_lines: "Lines",
 
     footer: "The replay is read in memory then erased: nothing is stored, nothing is shared. The economy figures come from the samples the game itself writes into the file.",
